@@ -46,6 +46,7 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
+        // TODO: Avoid state mapping this way and use a BlocBuilder/BlocConsumer instead
         .onReceive(counterBloc.states) { newCount in
             count = newCount
         }

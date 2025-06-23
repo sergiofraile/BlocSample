@@ -33,8 +33,6 @@ public protocol BlocBase {
     
     var eventsPublisher: AnyPublisher<Event, BlocError> { get }
     var states: CurrentValueSubject<State, Never> { get }
-//    var statePublisher: AnyPublisher<State, Never> { get }
-//    func emit(_ state: State)
     func on(_ event: Event, handler: @escaping Handler)
 }
 
@@ -116,8 +114,7 @@ struct BlocProvider<Content: View>: View {
     var body: some View {
         content()
     }
-}
-    
+}    
 
 struct BlocBuilder<S: BlocState, E: BlocEvent>: View {
     let viewBlock: (CurrentValueSubject<S, Never>, Bloc<S,E>) -> AnyView
@@ -132,16 +129,6 @@ struct BlocBuilder<S: BlocState, E: BlocEvent>: View {
         viewBlock(bloc.states, bloc)
     }
 }
-
-//
-//struct BlocListener {
-//    init() {}
-//}
-//
-//class BlocListener<BlocState: Equatable> {
-//    static func
-//}
-
 
 // Given a SwiftuI view you are able to consume a bloc
 
