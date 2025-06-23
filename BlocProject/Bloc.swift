@@ -32,12 +32,14 @@ public protocol BlocBase {
     typealias Handler = (Event, Emitter) -> Void
     
     var eventsPublisher: AnyPublisher<Event, BlocError> { get }
-    var statePublisher: AnyPublisher<State, Never> { get }
+    var states: CurrentValueSubject<State, Never> { get }
+//    var statePublisher: AnyPublisher<State, Never> { get }
 //    func emit(_ state: State)
     func on(_ event: Event, handler: @escaping Handler)
 }
 
 public class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
+    
     public typealias State = S
     public typealias Event = E
     
@@ -48,16 +50,13 @@ public class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
             .eraseToAnyPublisher()
     }
     
-    var states: [State] = []
-    public var statePublisher: AnyPublisher<State, Never> {
-        states.publisher.eraseToAnyPublisher()
-    }
-    
+    public var states: CurrentValueSubject<S, Never>
     var registeredHandlers: [E: Handler] = [:]
     
     private var cancellables = Set<AnyCancellable>()
     
-    init() {
+    init(initialState: State) {
+        states = CurrentValueSubject<S, Never>(initialState)
         subscribeToEvents()
     }
     
@@ -71,7 +70,7 @@ public class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     }
     
     public func emit(_ state: State) {
-        states.append(state)
+        states.send(state)
     }
     
     public func on(_ event: E, handler: @escaping Handler) {
@@ -84,18 +83,19 @@ public class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
 }
 
 @MainActor
-class BlocProvider {
-    static var shared: BlocProvider? = nil
+class BlocRegistry {
+    static var shared: BlocRegistry? = nil
     
     var registeredBlocs: [any BlocBase] = []
     
+    @usableFromInline
     init(with blocs: [any BlocBase]) {
         self.registeredBlocs = blocs
-        BlocProvider.shared = self
+        BlocRegistry.shared = self
     }
     
     static func bloc<S: BlocState, E: BlocEvent>(for state: S.Type, event: E.Type) throws -> any BlocBase {
-        if let bloc = BlocProvider.shared?.registeredBlocs.first(where: {
+        if let bloc = BlocRegistry.shared?.registeredBlocs.first(where: {
             $0 is Bloc<S, E>
         }) {
             return bloc
@@ -105,17 +105,31 @@ class BlocProvider {
     }
 }
 
-struct BlocBuilder<S: BlocState, E: BlocEvent>: View {
-    let viewBlock: (AnyPublisher<S, Never>, Bloc<S,E>) -> AnyView
-    let bloc: Bloc<S,E>
-
-    init(viewBlock: @escaping (AnyPublisher<S, Never>, Bloc<S,E>) -> AnyView) throws {
-        self.viewBlock = viewBlock
-        self.bloc = try BlocProvider.bloc(for: S.self, event: E.self) as! Bloc<S, E>
+struct BlocProvider<Content: View>: View {
+    let content: () -> Content
+    
+    init(with blocs: [any BlocBase], @ViewBuilder content: @escaping () -> Content) {
+        _ = BlocRegistry(with: blocs)
+        self.content = content
     }
     
     var body: some View {
-        viewBlock(bloc.statePublisher, bloc)
+        content()
+    }
+}
+    
+
+struct BlocBuilder<S: BlocState, E: BlocEvent>: View {
+    let viewBlock: (CurrentValueSubject<S, Never>, Bloc<S,E>) -> AnyView
+    let bloc: Bloc<S,E>
+
+    init(viewBlock: @escaping (CurrentValueSubject<S, Never>, Bloc<S,E>) -> AnyView) throws {
+        self.viewBlock = viewBlock
+        self.bloc = try BlocRegistry.bloc(for: S.self, event: E.self) as! Bloc<S, E>
+    }
+    
+    var body: some View {
+        viewBlock(bloc.states, bloc)
     }
 }
 
