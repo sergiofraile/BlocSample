@@ -10,7 +10,6 @@
 		BAC6E8EF2E0B44AF006941F7 /* Bloc in Frameworks */ = {isa = PBXBuildFile; productRef = BAC6E8EE2E0B44AF006941F7 /* Bloc */; };
 		BAC6E8F32E0B49FB006941F7 /* Bloc in Frameworks */ = {isa = PBXBuildFile; productRef = BAC6E8F22E0B49FB006941F7 /* Bloc */; };
 		BAC6E8F62E0B4A3F006941F7 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = BAC6E8F52E0B4A3F006941F7 /* Alamofire */; };
-		BAC6E8F82E0B4A3F006941F7 /* AlamofireDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = BAC6E8F72E0B4A3F006941F7 /* AlamofireDynamic */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,7 +60,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				BAC6E8F62E0B4A3F006941F7 /* Alamofire in Frameworks */,
-				BAC6E8F82E0B4A3F006941F7 /* AlamofireDynamic in Frameworks */,
 				BAC6E8F32E0B49FB006941F7 /* Bloc in Frameworks */,
 				BAC6E8EF2E0B44AF006941F7 /* Bloc in Frameworks */,
 			);
@@ -128,7 +126,6 @@
 				BAC6E8EE2E0B44AF006941F7 /* Bloc */,
 				BAC6E8F22E0B49FB006941F7 /* Bloc */,
 				BAC6E8F52E0B4A3F006941F7 /* Alamofire */,
-				BAC6E8F72E0B4A3F006941F7 /* AlamofireDynamic */,
 			);
 			productName = BlocProject;
 			productReference = BAB04EC02DC00BCC0045546E /* BlocProject.app */;
@@ -646,11 +643,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = BAC6E8F42E0B4A3F006941F7 /* XCRemoteSwiftPackageReference "Alamofire" */;
 			productName = Alamofire;
-		};
-		BAC6E8F72E0B4A3F006941F7 /* AlamofireDynamic */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BAC6E8F42E0B4A3F006941F7 /* XCRemoteSwiftPackageReference "Alamofire" */;
-			productName = AlamofireDynamic;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
