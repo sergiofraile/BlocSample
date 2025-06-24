@@ -5,6 +5,7 @@
 //  Created by Sergio Fraile on 28/04/2025.
 //
 
+import Bloc
 import SwiftUI
 
 struct ContentView: View {
@@ -20,14 +21,14 @@ struct ContentView: View {
             
             HStack(spacing: 50) {
                 Button(action: {
-                    counterBloc.performHandler(event: .decrement)
+                    counterBloc.perform(event: .decrement)
                 }) {
                     Image(systemName: "minus.circle")
                         .font(.largeTitle)
                 }
                 
                 Button(action: {
-                    counterBloc.performHandler(event: .increment)
+                    counterBloc.perform(event: .increment)
                 }) {
                     Image(systemName: "plus.circle")
                         .font(.largeTitle)
@@ -35,7 +36,7 @@ struct ContentView: View {
             }
             
             Button(action: {
-                counterBloc.performHandler(event: .reset)
+                counterBloc.perform(event: .reset)
             }) {
                 Text("Reset Counter")
                     .foregroundColor(.white)

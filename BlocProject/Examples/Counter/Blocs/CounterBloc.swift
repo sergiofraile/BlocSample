@@ -5,11 +5,7 @@
 //  Created by Sergio Fraile on 16/06/2025.
 //
 
-enum CounterEvent: BlocEvent {
-    case increment
-    case decrement
-    case reset
-}
+import Bloc
 
 class CounterBloc: Bloc<Int, CounterEvent> {
     enum Consts {

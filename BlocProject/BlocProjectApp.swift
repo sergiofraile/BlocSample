@@ -5,6 +5,7 @@
 //  Created by Sergio Fraile on 28/04/2025.
 //
 
+import Bloc
 import SwiftUI
 
 @main

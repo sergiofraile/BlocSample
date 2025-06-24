@@ -6,6 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		BAC6E8EF2E0B44AF006941F7 /* Bloc in Frameworks */ = {isa = PBXBuildFile; productRef = BAC6E8EE2E0B44AF006941F7 /* Bloc */; };
+		BAC6E8F32E0B49FB006941F7 /* Bloc in Frameworks */ = {isa = PBXBuildFile; productRef = BAC6E8F22E0B49FB006941F7 /* Bloc */; };
+		BAC6E8F62E0B4A3F006941F7 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = BAC6E8F52E0B4A3F006941F7 /* Alamofire */; };
+		BAC6E8F82E0B4A3F006941F7 /* AlamofireDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = BAC6E8F72E0B4A3F006941F7 /* AlamofireDynamic */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		BAB04ECF2DC00BCD0045546E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +34,7 @@
 		BAB04EC02DC00BCC0045546E /* BlocProject.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BlocProject.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BAB04ECE2DC00BCD0045546E /* BlocProjectTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BlocProjectTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		BAB04ED82DC00BCD0045546E /* BlocProjectUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BlocProjectUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BAC6E8F92E0B4A78006941F7 /* Bloc */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Bloc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -52,6 +60,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BAC6E8F62E0B4A3F006941F7 /* Alamofire in Frameworks */,
+				BAC6E8F82E0B4A3F006941F7 /* AlamofireDynamic in Frameworks */,
+				BAC6E8F32E0B49FB006941F7 /* Bloc in Frameworks */,
+				BAC6E8EF2E0B44AF006941F7 /* Bloc in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,6 +87,7 @@
 		BAB04EB72DC00BCC0045546E = {
 			isa = PBXGroup;
 			children = (
+				BAC6E8F92E0B4A78006941F7 /* Bloc */,
 				BAB04EC22DC00BCC0045546E /* BlocProject */,
 				BAB04ED12DC00BCD0045546E /* BlocProjectTests */,
 				BAB04EDB2DC00BCD0045546E /* BlocProjectUITests */,
@@ -112,6 +125,10 @@
 			);
 			name = BlocProject;
 			packageProductDependencies = (
+				BAC6E8EE2E0B44AF006941F7 /* Bloc */,
+				BAC6E8F22E0B49FB006941F7 /* Bloc */,
+				BAC6E8F52E0B4A3F006941F7 /* Alamofire */,
+				BAC6E8F72E0B4A3F006941F7 /* AlamofireDynamic */,
 			);
 			productName = BlocProject;
 			productReference = BAB04EC02DC00BCC0045546E /* BlocProject.app */;
@@ -195,6 +212,10 @@
 			);
 			mainGroup = BAB04EB72DC00BCC0045546E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				BAC6E8ED2E0B44AF006941F7 /* XCLocalSwiftPackageReference "Bloc" */,
+				BAC6E8F42E0B4A3F006941F7 /* XCRemoteSwiftPackageReference "Alamofire" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BAB04EC12DC00BCC0045546E /* Products */;
 			projectDirPath = "";
@@ -593,6 +614,45 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		BAC6E8ED2E0B44AF006941F7 /* XCLocalSwiftPackageReference "Bloc" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Bloc;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BAC6E8F42E0B4A3F006941F7 /* XCRemoteSwiftPackageReference "Alamofire" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Alamofire/Alamofire.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.10.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		BAC6E8EE2E0B44AF006941F7 /* Bloc */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Bloc;
+		};
+		BAC6E8F22E0B49FB006941F7 /* Bloc */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Bloc;
+		};
+		BAC6E8F52E0B4A3F006941F7 /* Alamofire */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BAC6E8F42E0B4A3F006941F7 /* XCRemoteSwiftPackageReference "Alamofire" */;
+			productName = Alamofire;
+		};
+		BAC6E8F72E0B4A3F006941F7 /* AlamofireDynamic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BAC6E8F42E0B4A3F006941F7 /* XCRemoteSwiftPackageReference "Alamofire" */;
+			productName = AlamofireDynamic;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = BAB04EB82DC00BCC0045546E /* Project object */;
 }
