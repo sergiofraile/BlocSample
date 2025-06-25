@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  CounterView.swift
 //  BlocProject
 //
 //  Created by Sergio Fraile on 28/04/2025.
@@ -8,7 +8,7 @@
 import Bloc
 import SwiftUI
 
-struct ContentView: View {
+struct CounterView: View {
     let counterBloc: CounterBloc = try! (BlocRegistry.bloc(for: Int.self, event: CounterEvent.self) as! CounterBloc)
     
     @State var count = 0
@@ -56,5 +56,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    CounterView()
 }
