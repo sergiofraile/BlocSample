@@ -18,3 +18,6 @@ enum Examples {
 }
 
 extension Examples: CaseIterable {}
+extension Examples: Identifiable {
+    var id: String { name }
+}

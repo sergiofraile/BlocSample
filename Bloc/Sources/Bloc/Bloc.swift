@@ -7,6 +7,7 @@
 
 import Combine
 
+@MainActor
 open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     
     public typealias State = S

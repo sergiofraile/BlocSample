@@ -16,15 +16,20 @@ struct BlocProjectApp: App {
     var body: some Scene {
         WindowGroup {
             BlocProvider(with: [
-                CounterBloc(initialState: CounterBloc.Consts.initialState)
+                CounterBloc(initialState: CounterBloc.Consts.initialState),
+                BoardGamesBloc(initialState: BoardGamesState.initial),
             ]){
                 NavigationSplitView {
-                    ForEach(Examples.allCases, id: \.self) { example in
-                        NavigationLink(example.name, value: example)
+                    List(Examples.allCases, selection: $selection) { example in
+                        Button(action: {
+                            selection = example
+                        }) {
+                            Text("View \(example.name)")
+                                .fontWeight(.bold)
+                        }
                     }
-//                    List(Examples, id: \.self, selection: $selection) { example in
-//                        NavigationLink(example.name, value: example)
-//                    }
+                    .listStyle(.sidebar)
+                    .navigationTitle("Sections")
                 } detail: {
                     if let selection {
                         switch selection {
