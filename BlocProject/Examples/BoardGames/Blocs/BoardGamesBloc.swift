@@ -13,18 +13,32 @@ class BoardGamesBloc: Bloc<BoardGamesState, BoardGamesEvent> {
     override init(initialState: BoardGamesState) {
         super.init(initialState: initialState)
         
-        self.on(.loadGames) { event, emit in
+        self.on(.clearGames) { event, emit in
+            emit(.initial)
+        }
+    }
+    
+    override func mapEventToState(event: BoardGamesEvent, emit: @escaping (Bloc<BoardGamesState, BoardGamesEvent>.State) -> Void) {
+        if case .loadGames(let userId) = event {
             emit(.loading)
-            
-            DispatchQueue.global().asyncAfter(deadline: .now() + 2) { [weak self] in
-                guard let self = self else { return }
-                // After the request, emit the loaded state with some dummy data
-                let boardGames = [BoardGameModel(name: "Chess"), BoardGameModel(name: "Monopoly")]
-                self.emit(.loaded(boardGames))
+            Task {
+                let games = await loadGames(for: userId)
+                emit(.loaded(games))
             }
         }
     }
+    
+    private func loadGames(for userId: String) async -> [BoardGameModel] {
+        let networkService = BoardGamesNetworkService()
+         await networkService.fetchDriversChampionship()
+        return []
+//        // After the request, emit the loaded state with some dummy data
+//        return [BoardGameModel(name: "Chess"), BoardGameModel(name: "Monopoly")]
+    }
+        
+        
 }
+
 //class BoardGamesBloc<State: BoardGamesState & Equatable>: Bloc<State, BoardGamesEvent> {
 //    
 //    override init(initialState: State) {

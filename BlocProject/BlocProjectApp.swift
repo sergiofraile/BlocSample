@@ -7,45 +7,31 @@
 
 import Bloc
 import SwiftUI
+import Pulse
+import PulseProxy
+import PulseUI
 
 @main
 struct BlocProjectApp: App {
     
-    @State var selection: Examples? = nil
+    init() {
+#if DEBUG
+        NetworkLogger.enableProxy()
+#endif
+    }
     
     var body: some Scene {
         WindowGroup {
+            // TODO: Move BlocProvider away from view as it rebuilds every time rather than persist
             BlocProvider(with: [
                 CounterBloc(initialState: CounterBloc.Consts.initialState),
                 BoardGamesBloc(initialState: BoardGamesState.initial),
             ]){
-                NavigationSplitView {
-                    List(Examples.allCases, selection: $selection) { example in
-                        Button(action: {
-                            selection = example
-                        }) {
-                            Text("View \(example.name)")
-                                .fontWeight(.bold)
-                        }
-                    }
-                    .listStyle(.sidebar)
-                    .navigationTitle("Sections")
-                } detail: {
-                    if let selection {
-                        switch selection {
-                        case .counter:
-                            CounterView()
-                        case .boardGames:
-                            BoardGamesView()
-                        case .login:
-                            LoginView()
-                        }
-                    } else {
-                        Text("Pick an example")
-                    }
-                   
-                }
+                ExamplesSplitView()
+                    .frame(minWidth: 375.0, minHeight: 600.0)
             }
         }
     }
 }
+
+

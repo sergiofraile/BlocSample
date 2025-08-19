@@ -32,7 +32,7 @@ struct BoardGamesView: View {
 //                    }
                 
                 Button(action: {
-                    boardGamesBloc.perform(event: .loadGames)
+                    boardGamesBloc.perform(event: .loadGames(userId: "fray88"))
                 }) {
                     Text("Tap to Load Board Games")
                         .foregroundColor(.white)
