@@ -10,24 +10,23 @@ import SwiftUI
 
 struct FormulaOneView: View {
     
-    let formulaOneBloc: FormulaOneBloc = try! (BlocRegistry.bloc(for: FormulaOneState.self, event: FormulaOneEvent.self) as! FormulaOneBloc)
+    let formulaOneBloc = BlocRegistry.resolve(FormulaOneBloc.self)
     
-    @State var formulaOneState: FormulaOneState = .initial
     var body: some View {
         VStack(spacing: 20) {
 
-            if formulaOneState == .initial {
+            if formulaOneBloc.state == .initial {
                 Text("This only appears in the initial state")
                     .font(.largeTitle)
                     .bold()
                     .padding()
             }
             
-            switch formulaOneState {
+            switch formulaOneBloc.state {
             case .initial:
                 
                 Button(action: {
-                    formulaOneBloc.perform(event: .loadChampionship)
+                    formulaOneBloc.send(.loadChampionship)
                 }) {
                     Text("Tap to load the Formula 1 Driver's Championship")
                         .foregroundColor(.white)
@@ -49,10 +48,6 @@ struct FormulaOneView: View {
         .navigationTitle("Driver's Championship")
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
-        // TODO: Avoid state mapping this way and use a BlocBuilder/BlocConsumer instead
-        .onReceive(formulaOneBloc.states) { newState in
-            formulaOneState = newState
-        }
     }
     
     @ViewBuilder
@@ -85,7 +80,7 @@ struct FormulaOneView: View {
             .padding(.vertical, 8)
         }.toolbar {
             Button(action: {
-                formulaOneBloc.perform(event: .clear)
+                formulaOneBloc.send(.clear)
             }) {
                 Text("🗑️")
             }

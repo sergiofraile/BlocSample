@@ -8,21 +8,15 @@
 import Bloc
 import Foundation
 
+@MainActor
 class FormulaOneBloc: Bloc<FormulaOneState, FormulaOneEvent> {
     
-    override init(initialState: FormulaOneState) {
+    override init(initialState: FormulaOneState = .initial) {
         super.init(initialState: initialState)
         
         self.on(.clear) { event, emit in
             emit(.initial)
         }
-        //        self.on(.loadChampionship) { event, emit in
-        //            emit(.loading)
-        //            Task { [weak self] in
-        //                await self?.loadChampionship()
-        //                emit(.loaded)
-        //            }
-        //        }
     }
     
     override func mapEventToState(event: FormulaOneEvent, emit: @escaping (Bloc<FormulaOneState, FormulaOneEvent>.State) -> Void) {
@@ -43,5 +37,4 @@ class FormulaOneBloc: Bloc<FormulaOneState, FormulaOneEvent> {
             emit(.error(FormulaOneError()))
         }
     }
-    
 }

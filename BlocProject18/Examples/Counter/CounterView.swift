@@ -9,26 +9,25 @@ import Bloc
 import SwiftUI
 
 struct CounterView: View {
-    let counterBloc: CounterBloc = try! (BlocRegistry.bloc(for: Int.self, event: CounterEvent.self) as! CounterBloc)
+    let counterBloc = BlocRegistry.resolve(CounterBloc.self)
     
-    @State var count = 0
     var body: some View {
         VStack(spacing: 20) {
             
-            Text("Counter: \(count)")
+            Text("Counter: \(counterBloc.state)")
                 .font(.largeTitle)
                 .bold()
             
             HStack(spacing: 50) {
                 Button(action: {
-                    counterBloc.perform(event: .decrement)
+                    counterBloc.send(.decrement)
                 }) {
                     Image(systemName: "minus.circle")
                         .font(.largeTitle)
                 }
                 
                 Button(action: {
-                    counterBloc.perform(event: .increment)
+                    counterBloc.send(.increment)
                 }) {
                     Image(systemName: "plus.circle")
                         .font(.largeTitle)
@@ -36,7 +35,7 @@ struct CounterView: View {
             }
             
             Button(action: {
-                counterBloc.perform(event: .reset)
+                counterBloc.send(.reset)
             }) {
                 Text("Reset Counter")
                     .foregroundColor(.white)
@@ -48,12 +47,7 @@ struct CounterView: View {
         .navigationTitle("Counter Sample")
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
-        // TODO: Avoid state mapping this way and use a BlocBuilder/BlocConsumer instead
-        .onReceive(counterBloc.states) { newCount in
-            count = newCount
-        }
     }
-    
 }
 
 #Preview {
