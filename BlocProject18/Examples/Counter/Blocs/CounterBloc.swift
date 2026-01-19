@@ -13,24 +13,34 @@ class CounterBloc: Bloc<Int, CounterEvent> {
         static let initialState: Int = 0
     }
     
+    private static let blocName = "CounterBloc"
+    private static let example = "Counter"
+    
     override init(initialState: Int = Consts.initialState) {
         super.init(initialState: initialState)
         
+        BlocLogger.logInit(Self.blocName, example: Self.example, initialState: initialState)
+        
         self.on(.increment) { [weak self] event, emit in
             guard let self else { return }
-            // Increment the current state by 1
-            emit(self.state + 1)
+            BlocLogger.logEvent(event, blocName: Self.blocName, example: Self.example)
+            let newState = self.state + 1
+            emit(newState)
+            BlocLogger.logState(newState, blocName: Self.blocName, example: Self.example)
         }
         
         self.on(.decrement) { [weak self] event, emit in
             guard let self else { return }
-            // Decrease the current state by 1
-            emit(self.state - 1)
+            BlocLogger.logEvent(event, blocName: Self.blocName, example: Self.example)
+            let newState = self.state - 1
+            emit(newState)
+            BlocLogger.logState(newState, blocName: Self.blocName, example: Self.example)
         }
         
         self.on(.reset) { event, emit in
-            // Reset the state to the initial value
+            BlocLogger.logEvent(event, blocName: Self.blocName, example: Self.example)
             emit(Consts.initialState)
+            BlocLogger.logState(Consts.initialState, blocName: Self.blocName, example: Self.example)
         }
     }
 }

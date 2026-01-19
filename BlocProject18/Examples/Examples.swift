@@ -6,13 +6,13 @@
 //
 
 enum Examples {
-    case counter, boardGames, login
+    case counter, login, suvs
     
     var name: String {
         switch self {
         case .counter: return "Counter"
-        case .boardGames: return "Board Games"
         case .login: return "Login"
+        case .suvs: return "SUVs"
         }
     }
 }

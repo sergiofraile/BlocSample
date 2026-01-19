@@ -115,6 +115,7 @@ struct CounterView: View {
 ### Essentials
 
 - <doc:GettingStarted>
+- <doc:Examples>
 - ``Bloc``
 - ``BlocProvider``
 - ``BlocRegistry``

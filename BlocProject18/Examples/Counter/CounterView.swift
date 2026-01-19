@@ -11,45 +11,178 @@ import SwiftUI
 struct CounterView: View {
     let counterBloc = BlocRegistry.resolve(CounterBloc.self)
     
+    @State private var animateIncrement = false
+    @State private var animateDecrement = false
+    
     var body: some View {
-        VStack(spacing: 20) {
+        ZStack {
+            // Gradient background
+            LinearGradient(
+                colors: [
+                    Color(red: 0.05, green: 0.1, blue: 0.15),
+                    Color(red: 0.1, green: 0.15, blue: 0.25)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
             
-            Text("Counter: \(counterBloc.state)")
-                .font(.largeTitle)
-                .bold()
+            // Decorative circles
+            GeometryReader { geometry in
+                Circle()
+                    .fill(Color.cyan.opacity(0.1))
+                    .frame(width: 300, height: 300)
+                    .blur(radius: 60)
+                    .offset(x: -100, y: -50)
+                
+                Circle()
+                    .fill(Color.purple.opacity(0.15))
+                    .frame(width: 250, height: 250)
+                    .blur(radius: 50)
+                    .offset(x: geometry.size.width - 100, y: geometry.size.height - 200)
+            }
             
-            HStack(spacing: 50) {
-                Button(action: {
-                    counterBloc.send(.decrement)
-                }) {
-                    Image(systemName: "minus.circle")
-                        .font(.largeTitle)
+            VStack(spacing: 50) {
+                Spacer()
+                
+                // Counter display
+                VStack(spacing: 12) {
+                    Text("COUNTER")
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .tracking(6)
+                        .foregroundColor(.cyan.opacity(0.7))
+                    
+                    Text("\(counterBloc.state)")
+                        .font(.system(size: 96, weight: .thin, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.white, .cyan.opacity(0.8)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .padding(.vertical, 24)
+                        .contentTransition(.numericText())
+                        .animation(.spring(response: 0.3), value: counterBloc.state)
+                }
+                .padding(.vertical, 40)
+                .padding(.horizontal, 60)
+                .background(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(.ultraThinMaterial.opacity(0.3))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [.white.opacity(0.2), .clear],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
+                )
+                
+                Spacer()
+                
+                // Control buttons
+                HStack(spacing: 40) {
+                    // Decrement button
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3)) {
+                            animateDecrement = true
+                        }
+                        counterBloc.send(.decrement)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            animateDecrement = false
+                        }
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color(red: 0.9, green: 0.3, blue: 0.4), Color(red: 0.7, green: 0.2, blue: 0.3)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 72, height: 72)
+                                .shadow(color: Color(red: 0.9, green: 0.3, blue: 0.4).opacity(0.4), radius: 12, y: 6)
+                            
+                            Image(systemName: "minus")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        .scaleEffect(animateDecrement ? 0.9 : 1.0)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    // Increment button
+                    Button(action: {
+                        withAnimation(.spring(response: 0.3)) {
+                            animateIncrement = true
+                        }
+                        counterBloc.send(.increment)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            animateIncrement = false
+                        }
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color(red: 0.3, green: 0.8, blue: 0.7), Color(red: 0.2, green: 0.6, blue: 0.6)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 72, height: 72)
+                                .shadow(color: Color(red: 0.3, green: 0.8, blue: 0.7).opacity(0.4), radius: 12, y: 6)
+                            
+                            Image(systemName: "plus")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        .scaleEffect(animateIncrement ? 0.9 : 1.0)
+                    }
+                    .buttonStyle(.plain)
                 }
                 
+                // Reset button
                 Button(action: {
-                    counterBloc.send(.increment)
+                    counterBloc.send(.reset)
                 }) {
-                    Image(systemName: "plus.circle")
-                        .font(.largeTitle)
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Reset")
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    }
+                    .foregroundColor(.white.opacity(0.7))
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(
+                        Capsule()
+                            .fill(.white.opacity(0.1))
+                            .overlay(
+                                Capsule()
+                                    .stroke(.white.opacity(0.2), lineWidth: 1)
+                            )
+                    )
                 }
+                .buttonStyle(.plain)
+                
+                Spacer()
             }
-            
-            Button(action: {
-                counterBloc.send(.reset)
-            }) {
-                Text("Reset Counter")
-                    .foregroundColor(.white)
-                    .padding()
-                    .background(Color.blue)
-                    .cornerRadius(10)
-            }
+            .padding()
         }
-        .navigationTitle("Counter Sample")
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .navigationTitle("Counter")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
 #Preview {
-    CounterView()
+    NavigationStack {
+        CounterView()
+    }
 }

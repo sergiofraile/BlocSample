@@ -26,6 +26,8 @@ struct BlocProject18App: App {
             BlocProvider(with: [
                 CounterBloc(initialState: CounterBloc.Consts.initialState),
                 FormulaOneBloc(initialState: FormulaOneState.initial),
+                LorcanaBloc(networkService: LorcanaNetworkService()),
+                SUVBloc(),
             ]){
                 ExamplesSplitView()
                     .frame(minWidth: 375.0, minHeight: 600.0)

@@ -81,3 +81,8 @@ fastlane/test_output
 iOSInjectionProject/
 
 # Note: .cursorrules should be committed to share project rules with the team
+
+# SUVify API Configuration
+# Contains sensitive API keys - do not commit!
+# Use Suvify.plist.example as a template
+BlocProject18/Suvify.plist
