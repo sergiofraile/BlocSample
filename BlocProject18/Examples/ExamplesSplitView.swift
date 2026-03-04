@@ -255,11 +255,11 @@ struct ExampleRowView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(page.name)
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.white)
                 
                 Text(page.subtitle)
                     .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.white.opacity(0.6))
                     .lineLimit(1)
             }
             
@@ -267,7 +267,7 @@ struct ExampleRowView: View {
             
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.secondary)
+                .foregroundColor(.white.opacity(0.6))
                 .opacity(isHovered ? 1 : 0.5)
                 .offset(x: isHovered ? 2 : 0)
         }

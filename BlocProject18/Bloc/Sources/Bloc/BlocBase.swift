@@ -51,6 +51,7 @@ import Combine
 ///
 /// - ``on(_:handler:)``
 /// - ``send(_:)``
+@MainActor
 public protocol BlocBase: AnyObject {
     
     /// The type of state managed by this Bloc.
@@ -108,8 +109,26 @@ public protocol BlocBase: AnyObject {
     /// ```
     var statePublisher: AnyPublisher<State, Never> { get }
     
-    /// A Combine publisher that emits events as they are received.
-    var eventsPublisher: AnyPublisher<Event, BlocError> { get }
+    /// A Combine publisher that emits events as they are dispatched to the Bloc.
+    ///
+    /// Subscribe to this publisher to observe every event the Bloc receives,
+    /// in the order they are dispatched:
+    ///
+    /// ```swift
+    /// counterBloc.eventsPublisher
+    ///     .sink { event in print("Received: \(event)") }
+    ///     .store(in: &cancellables)
+    /// ```
+    var eventsPublisher: AnyPublisher<Event, Never> { get }
+    
+    /// A Combine publisher that emits errors signalled via ``addError(_:)``.
+    ///
+    /// ```swift
+    /// counterBloc.errorsPublisher
+    ///     .sink { error in print("Bloc error: \(error)") }
+    ///     .store(in: &cancellables)
+    /// ```
+    var errorsPublisher: AnyPublisher<Error, Never> { get }
     
     /// Registers a handler for a specific event.
     ///
@@ -122,4 +141,25 @@ public protocol BlocBase: AnyObject {
     ///
     /// - Parameter event: The event to send.
     func send(_ event: Event)
+    
+    /// Signals that an error has occurred inside the Bloc.
+    ///
+    /// The error is broadcast on ``errorsPublisher`` so observers can react
+    /// without coupling error handling to the state type:
+    ///
+    /// ```swift
+    /// on(.fetchData) { [weak self] event, emit in
+    ///     guard let self else { return }
+    ///     do {
+    ///         let data = try await api.fetchData()
+    ///         emit(.loaded(data))
+    ///     } catch {
+    ///         addError(error)
+    ///         emit(.idle)
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// - Parameter error: The error that occurred.
+    func addError(_ error: Error)
 }

@@ -5,32 +5,37 @@
 //  Created by Sergio Fraile on 24/06/2025.
 //
 
-/// Errors that can occur during Bloc operations.
+/// A concrete error type for common Bloc operations.
 ///
-/// `BlocError` represents errors that may occur within the Bloc pattern,
-/// such as during event processing or state emission.
+/// `BlocError` provides a set of well-known error cases you can use when
+/// signalling errors via ``Bloc/addError(_:)``.
 ///
 /// ## Overview
 ///
-/// Currently, `BlocError` provides a default error case. As the library
-/// evolves, more specific error cases may be added.
-///
-/// ## Usage
-///
-/// You can observe errors through the ``Bloc/eventsPublisher``:
+/// You are not required to use `BlocError`—``Bloc/addError(_:)`` accepts
+/// any `Error`. However, `BlocError` is useful when no domain-specific error
+/// type is available:
 ///
 /// ```swift
-/// bloc.eventsPublisher
-///     .sink(
-///         receiveCompletion: { completion in
-///             if case .failure(let error) = completion {
-///                 print("Bloc error: \(error)")
-///             }
-///         },
-///         receiveValue: { event in
-///             print("Event: \(event)")
+/// on(.fetchData) { [weak self] event, emit in
+///     guard let self else { return }
+///     guard isNetworkAvailable else {
+///         addError(BlocError.defaultError)
+///         return
+///     }
+///     // ...
+/// }
+/// ```
+///
+/// Observe errors via ``Bloc/errorsPublisher``:
+///
+/// ```swift
+/// bloc.errorsPublisher
+///     .sink { error in
+///         if let blocError = error as? BlocError {
+///             print("Bloc error: \(blocError)")
 ///         }
-///     )
+///     }
 ///     .store(in: &cancellables)
 /// ```
 ///
@@ -43,7 +48,7 @@ public enum BlocError: Error {
     
     /// A generic error that occurred during Bloc operations.
     ///
-    /// This is a placeholder error case. In future versions, more specific
-    /// error types may be introduced for better error handling.
+    /// Use this as a placeholder when no more specific error type is available.
+    /// Consider defining a domain-specific `Error` type for production code.
     case defaultError
 }

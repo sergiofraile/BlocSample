@@ -41,3 +41,25 @@ enum SUVEvent: BlocEvent {
     /// User dismissed the instance detail view.
     case dismissInstanceDetail
 }
+
+extension SUVEvent: CustomStringConvertible {
+    /// Returns a safe description that redacts sensitive values such as passwords.
+    var description: String {
+        switch self {
+        case .login(let username, _):
+            return "login(username: \"\(username)\", password: [REDACTED])"
+        case .logout:
+            return "logout"
+        case .fetchInstances:
+            return "fetchInstances"
+        case .refreshInstances:
+            return "refreshInstances"
+        case .extendInstance(let instanceId, let hours):
+            return "extendInstance(instanceId: \"\(instanceId)\", hours: \(hours))"
+        case .selectInstance(let instance):
+            return "selectInstance(\(instance.instanceId))"
+        case .dismissInstanceDetail:
+            return "dismissInstanceDetail"
+        }
+    }
+}

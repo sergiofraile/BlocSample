@@ -13,22 +13,26 @@ import PulseUI
 
 @main
 struct BlocProject18App: App {
-    
+
+    // Blocs are stored as properties so they survive body re-evaluations.
+    // Declaring them inside body would create fresh instances on every render,
+    // causing BlocRegistry to be replaced and all Bloc state to be lost.
+    private let counterBloc    = CounterBloc()
+    private let calculatorBloc = CalculatorBloc()
+    private let formulaOneBloc = FormulaOneBloc()
+    private let lorcanaBloc    = LorcanaBloc(networkService: LorcanaNetworkService())
+    private let suvBloc        = SUVBloc()
+
     init() {
+        BlocObserver.shared = AppBlocObserver()
 #if DEBUG
         NetworkLogger.enableProxy()
 #endif
     }
-    
+
     var body: some Scene {
         WindowGroup {
-            // TODO: Move BlocProvider away from view as it rebuilds every time rather than persist
-            BlocProvider(with: [
-                CounterBloc(initialState: CounterBloc.Consts.initialState),
-                FormulaOneBloc(initialState: FormulaOneState.initial),
-                LorcanaBloc(networkService: LorcanaNetworkService()),
-                SUVBloc(),
-            ]){
+            BlocProvider(with: [counterBloc, calculatorBloc, formulaOneBloc, lorcanaBloc, suvBloc]) {
                 ExamplesSplitView()
                     .frame(minWidth: 375.0, minHeight: 600.0)
             }

@@ -12,6 +12,13 @@ A Swift implementation of the [Bloc pattern](https://bloclibrary.dev/) for build
 * [Getting Started](#getting-started)
 * [Core Concepts](#core-concepts)
 * [Basic Usage](#basic-usage)
+  * [Handling Events with Associated Values](#handling-events-with-associated-values)
+  * [Async Operations](#async-operations)
+  * [Combine Integration](#combine-integration)
+  * [Error Handling](#error-handling)
+* [Advanced Features](#advanced-features)
+  * [BlocObserver](#blocobserver)
+  * [Lifecycle Hooks](#lifecycle-hooks)
 * [Examples](#examples)
 * [Documentation](#documentation)
 * [Installation](#installation)
@@ -534,16 +541,266 @@ on(.fetchData) { [weak self] event, emit in
 
 ### Combine Integration
 
-For advanced reactive patterns, use the Combine publisher:
+Three publishers are available for reactive pipelines:
 
 ```swift
-// Subscribe to state changes with Combine
+// Observe every state change
 counterBloc.statePublisher
-    .sink { state in
-        print("State changed to: \(state)")
+    .removeDuplicates()
+    .sink { state in print("State: \(state)") }
+    .store(in: &cancellables)
+
+// Observe every dispatched event
+counterBloc.eventsPublisher
+    .sink { event in print("Event: \(event)") }
+    .store(in: &cancellables)
+
+// Observe errors signalled via addError(_:)
+counterBloc.errorsPublisher
+    .sink { error in print("Error: \(error)") }
+    .store(in: &cancellables)
+```
+
+`eventsPublisher` uses a `PassthroughSubject` internally and emits each event after it has been dispatched, in the order received.
+
+### Error Handling
+
+Use `addError(_:)` to surface errors without encoding them into the state type. This keeps your state model clean and lets error handling be composed separately:
+
+```swift
+on(.fetchData) { [weak self] event, emit in
+    guard let self else { return }
+    do {
+        let data = try await api.fetchData()
+        emit(.loaded(data))
+    } catch {
+        addError(error)   // broadcasts to errorsPublisher
+        emit(.idle)       // state resets without carrying the error
+    }
+}
+```
+
+Observe errors centrally—for example to feed a crash reporter or a toast notification system:
+
+```swift
+bloc.errorsPublisher
+    .sink { error in
+        CrashReporter.log(error)
+        ToastManager.show(error.localizedDescription)
     }
     .store(in: &cancellables)
 ```
+
+You can use the built-in ``BlocError`` type for generic cases, or your own `Error` conforming type for domain-specific errors:
+
+```swift
+enum DataError: Error {
+    case networkUnavailable
+    case invalidResponse(statusCode: Int)
+}
+
+// Inside a handler:
+addError(DataError.networkUnavailable)
+```
+
+## Advanced Features
+
+### BlocObserver
+
+`BlocObserver` is a global observer that receives lifecycle notifications from **every** Bloc in the app. It is the recommended way to implement cross-cutting concerns — logging, analytics, crash reporting — without touching individual Bloc subclasses.
+
+#### Setting the observer
+
+Set it once at app startup, before any Blocs are created:
+
+```swift
+@main
+struct MyApp: App {
+    init() {
+        BlocObserver.shared = AppBlocObserver()
+    }
+}
+```
+
+#### Implementing a custom observer
+
+Subclass `BlocObserver` and override the hooks you need. Always call `super`:
+
+```swift
+class AppBlocObserver: BlocObserver {
+
+    override func onCreate(_ bloc: any BlocBase) {
+        super.onCreate(bloc)
+        print("Created: \(type(of: bloc))")
+    }
+
+    override func onEvent(_ bloc: any BlocBase, event: Any) {
+        super.onEvent(bloc, event: event)
+        print("\(type(of: bloc)) ← \(event)")
+    }
+
+    override func onChange(_ bloc: any BlocBase, change: Any) {
+        super.onChange(bloc, change: change)
+        print("\(type(of: bloc)) \(change)")
+    }
+
+    override func onTransition(_ bloc: any BlocBase, transition: Any) {
+        super.onTransition(bloc, transition: transition)
+        print("\(type(of: bloc)) \(transition)")
+    }
+
+    override func onError(_ bloc: any BlocBase, error: Error) {
+        super.onError(bloc, error: error)
+        CrashReporter.log(error)
+    }
+}
+```
+
+With this in place, every existing and future Bloc — `CounterBloc`, `LoginBloc`, anything new — is automatically observed. No per-Bloc logging code needed.
+
+#### Observer hooks
+
+| Hook | When it fires | Parameters |
+|------|---------------|------------|
+| `onCreate` | Bloc is initialised | `bloc` |
+| `onEvent` | Before an event is dispatched | `bloc`, `event: Any` |
+| `onChange` | After every `emit()` | `bloc`, `change: Any` (cast to `Change<S>`) |
+| `onTransition` | After sync `emit()` with event context | `bloc`, `transition: Any` (cast to `Transition<E,S>`) |
+| `onError` | When `addError()` is called | `bloc`, `error: Error` |
+
+#### Redacting sensitive event data
+
+When an event carries sensitive values such as passwords, conform the event to `CustomStringConvertible` so that `String(describing:)` — used by the observer — emits a safe representation:
+
+```swift
+extension LoginEvent: CustomStringConvertible {
+    var description: String {
+        switch self {
+        case .login(let email, _):
+            return "login(email: \"\(email)\", password: [REDACTED])"
+        default:
+            return "\(self)"
+        }
+    }
+}
+```
+
+### Lifecycle Hooks
+
+Every `Bloc` exposes four overridable lifecycle methods that let you observe its internal activity without modifying the state or handler logic. They are the foundation for features like `BlocObserver`, `HydratedBloc`, and per-bloc logging.
+
+```
+Event sent
+    │
+    ▼
+onEvent(_:)          ← called before processing begins
+    │
+    ▼
+Handler / mapEventToState
+    │
+    ▼
+emit(_:) called
+    │
+    ├──▶ onTransition(_:)   ← includes the triggering event (sync only)
+    └──▶ onChange(_:)       ← always fired, sync or async
+```
+
+#### `onEvent(_:)`
+
+Called immediately before an event is dispatched to its handler.
+
+```swift
+override func onEvent(_ event: CounterEvent) {
+    super.onEvent(event)
+    print("Processing: \(event)")
+}
+```
+
+#### `onChange(_:)`
+
+Called after every `emit(_:)`, synchronous or async, with a `Change` value containing the previous and next states.
+
+```swift
+override func onChange(_ change: Change<Int>) {
+    super.onChange(change)
+    print(change)
+    // Change { currentState: 0, nextState: 1 }
+}
+```
+
+#### `onTransition(_:)`
+
+A superset of `onChange` that also carries the event. Only fires when `emit` is called synchronously within an event handler — emissions from `Task` blocks reach `onChange` but not `onTransition`.
+
+```swift
+override func onTransition(_ transition: Transition<CounterEvent, Int>) {
+    super.onTransition(transition)
+    print(transition)
+    // Transition { currentState: 0, event: increment, nextState: 1 }
+}
+```
+
+#### `onError(_:)`
+
+Called whenever `addError(_:)` is invoked, giving you a central place to log or react to Bloc-level errors.
+
+```swift
+override func onError(_ error: Error) {
+    super.onError(error)
+    CrashReporter.log(error)
+}
+```
+
+#### Always call `super`
+
+Each hook calls `super` to ensure the chain is preserved as the library grows (e.g. `BlocObserver` wiring, coming in a later release, is inserted at the `super` call site).
+
+#### Calculator Example
+
+The **Calculator** example in `Examples/Calculator/` demonstrates all four hooks live. As you operate the calculator, the right-hand panel displays a colour-coded log of every hook invocation in real time:
+
+| Badge | Hook | When it fires |
+|-------|------|---------------|
+| `EVENT` (green) | `onEvent` | Every button tap |
+| `TRANSITION` (purple) | `onTransition` | Synchronous state change with event context |
+| `CHANGE` (cyan) | `onChange` | Every `emit()` call |
+| `ERROR` (red) | `onError` | Division by zero via `addError()` |
+
+```swift
+@MainActor
+class CalculatorBloc: Bloc<CalculatorState, CalculatorEvent> {
+
+    let lifecycleLog = BlocLifecycleLog()
+
+    override func onEvent(_ event: CalculatorEvent) {
+        super.onEvent(event)
+        lifecycleLog.append(kind: .event, message: "\(event)")
+    }
+
+    override func onChange(_ change: Change<CalculatorState>) {
+        super.onChange(change)
+        lifecycleLog.append(
+            kind: .change,
+            message: "\(change.currentState.displayValue) → \(change.nextState.displayValue)"
+        )
+    }
+
+    override func onTransition(_ transition: Transition<CalculatorEvent, CalculatorState>) {
+        super.onTransition(transition)
+        lifecycleLog.append(
+            kind: .transition,
+            message: "\(transition.currentState.displayValue) — \(transition.event) → \(transition.nextState.displayValue)"
+        )
+    }
+
+    override func onError(_ error: Error) {
+        super.onError(error)
+        lifecycleLog.append(kind: .error, message: error.localizedDescription ?? "\(error)")
+    }
+}
+```
+
+> The `BlocLifecycleLog` is a simple `@Observable` class that the view observes directly — it is not part of the Bloc state. This keeps logging concerns separate from business logic.
 
 ## Examples
 

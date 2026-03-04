@@ -155,11 +155,16 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     // MARK: - Events
     
     @ObservationIgnored
-    var events: [Event] = []
+    private var eventSubject = PassthroughSubject<Event, Never>()
     
-    /// A Combine publisher that emits events as they are sent to the Bloc.
+    @ObservationIgnored
+    private var errorSubject = PassthroughSubject<Error, Never>()
+    
+    /// A Combine publisher that emits every event dispatched to the Bloc.
     ///
-    /// This can be useful for debugging or logging purposes:
+    /// Events are published after the Bloc has finished processing them,
+    /// making this publisher useful for logging, analytics, or side-effect
+    /// pipelines that react to events externally:
     ///
     /// ```swift
     /// counterBloc.eventsPublisher
@@ -168,10 +173,23 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     ///     }
     ///     .store(in: &cancellables)
     /// ```
-    public var eventsPublisher: AnyPublisher<Event, BlocError> {
-        events.publisher
-            .setFailureType(to: BlocError.self)
-            .eraseToAnyPublisher()
+    public var eventsPublisher: AnyPublisher<Event, Never> {
+        eventSubject.eraseToAnyPublisher()
+    }
+    
+    /// A Combine publisher that emits errors signalled via ``addError(_:)``.
+    ///
+    /// Use this to observe Bloc errors without encoding them into the state type:
+    ///
+    /// ```swift
+    /// counterBloc.errorsPublisher
+    ///     .sink { error in
+    ///         print("Bloc error: \(error)")
+    ///     }
+    ///     .store(in: &cancellables)
+    /// ```
+    public var errorsPublisher: AnyPublisher<Error, Never> {
+        errorSubject.eraseToAnyPublisher()
     }
     
     // MARK: - Handlers
@@ -181,6 +199,22 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     
     @ObservationIgnored
     private var cancellables = Set<AnyCancellable>()
+    
+    /// Holds the event being processed by ``send(_:)`` for the duration of its synchronous
+    /// handler execution.
+    ///
+    /// This is the rendezvous point between ``send(_:)`` and ``emit(_:)``: because `emit` is
+    /// called one stack frame *inside* the handler, it has no direct access to the event that
+    /// triggered it. `send` deposits the event here before invoking the handler, and `emit`
+    /// reads it to construct a ``Transition``. `send` clears it immediately after the handler
+    /// returns, so the value is never retained beyond a single synchronous dispatch.
+    ///
+    /// When `emit` is called from an async `Task` context, `send` has already returned and
+    /// cleared this property, so `currentEvent` is `nil`. In that case `emit` skips
+    /// ``onTransition(_:)`` and only calls ``onChange(_:)``, which is the correct behaviour —
+    /// the causal link between event and emission no longer holds across an async boundary.
+    @ObservationIgnored
+    private var currentEvent: E?
     
     // MARK: - Initialization
     
@@ -208,21 +242,12 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     public init(initialState: State) {
         _state = initialState
         statesSubject = CurrentValueSubject<S, Never>(initialState)
-        subscribeToEvents()
-    }
-    
-    private func subscribeToEvents() {
-        eventsPublisher
-            .sink { error in
-                // TODO: handle error
-            } receiveValue: { [weak self] event in
-                self?.send(event)
-            }.store(in: &cancellables)
+        BlocObserver.shared.onCreate(self)
     }
     
     // MARK: - State Emission
     
-    /// Emits a new state, triggering UI updates.
+    /// Emits a new state, triggering UI updates and lifecycle hooks.
     ///
     /// Call this method from within event handlers to transition to a new state.
     /// This updates both the observable ``state`` property and the ``statePublisher``.
@@ -230,7 +255,7 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     /// ```swift
     /// on(.increment) { [weak self] event, emit in
     ///     guard let self else { return }
-    ///     emit(self.state + 1)  // Emits the new state
+    ///     emit(self.state + 1)
     /// }
     /// ```
     ///
@@ -239,14 +264,33 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     /// ```swift
     /// Task {
     ///     let data = try await api.fetchData()
-    ///     self.emit(.loaded(data))  // Update state from async context
+    ///     self.emit(.loaded(data))
     /// }
     /// ```
     ///
+    /// ## Lifecycle hooks
+    ///
+    /// Every call to `emit` triggers the following hooks in order:
+    ///
+    /// 1. **``onTransition(_:)``** — fired first, but only when `emit` is called
+    ///    synchronously within an event handler (i.e. not from inside a `Task`).
+    ///    Carries the triggering event alongside the previous and next state.
+    ///
+    /// 2. **``onChange(_:)``** — fired after every `emit`, regardless of whether
+    ///    the call is synchronous or async. Carries only the previous and next state.
+    ///
+    /// If you do not override either hook, both degenerate to no-ops and the
+    /// overhead is negligible — `Change` and `Transition` are stack-allocated structs.
+    ///
     /// - Parameter state: The new state to emit.
     public func emit(_ state: State) {
+        let change = Change(currentState: self.state, nextState: state)
+        if let event = currentEvent {
+            onTransition(Transition(currentState: self.state, event: event, nextState: state))
+        }
         self.state = state
         statesSubject.send(state)
+        onChange(change)
     }
     
     // MARK: - Event Handling
@@ -311,6 +355,39 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
         print("No handler found for event: \(event)")
     }
     
+    /// Signals that an error has occurred inside the Bloc.
+    ///
+    /// The error is broadcast on ``errorsPublisher`` so observers can react
+    /// without encoding error state into the state type. Use this inside
+    /// event handlers to surface non-fatal or out-of-band errors:
+    ///
+    /// ```swift
+    /// on(.fetchData) { [weak self] event, emit in
+    ///     guard let self else { return }
+    ///     do {
+    ///         let data = try await api.fetchData()
+    ///         emit(.loaded(data))
+    ///     } catch {
+    ///         addError(error)   // broadcast without changing state
+    ///         emit(.idle)
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// Observe errors via Combine:
+    ///
+    /// ```swift
+    /// bloc.errorsPublisher
+    ///     .sink { error in crashReporter.log(error) }
+    ///     .store(in: &cancellables)
+    /// ```
+    ///
+    /// - Parameter error: The error that occurred.
+    public func addError(_ error: Error) {
+        errorSubject.send(error)
+        onError(error)
+    }
+    
     /// Sends an event to the Bloc for processing.
     ///
     /// This is the primary way to trigger state changes from your UI:
@@ -327,10 +404,90 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     ///
     /// - Parameter event: The event to send.
     public func send(_ event: E) {
+        onEvent(event)
+        // Deposit the event so that any synchronous emit() call inside the handler
+        // can read it to build a Transition. Cleared immediately after the handler
+        // returns — see the currentEvent property comment for the full rationale.
+        currentEvent = event
         if let handler = registeredHandlers[event] {
             handler(event, emit)
         } else {
             mapEventToState(event: event, emit: emit)
         }
+        currentEvent = nil  // release: emit() calls from async Tasks will see nil
+        eventSubject.send(event)
+    }
+    
+    // MARK: - Lifecycle Hooks
+    
+    /// Called immediately before an event is processed.
+    ///
+    /// Override to react to incoming events at the Bloc level:
+    ///
+    /// ```swift
+    /// override func onEvent(_ event: CounterEvent) {
+    ///     super.onEvent(event)
+    ///     print("Processing event: \(event)")
+    /// }
+    /// ```
+    ///
+    /// - Parameter event: The event about to be dispatched.
+    open func onEvent(_ event: E) {
+        BlocObserver.shared.onEvent(self, event: event)
+    }
+    
+    /// Called after every ``emit(_:)``, with the previous and next state.
+    ///
+    /// `onChange` fires for all state changes, including those emitted
+    /// asynchronously from within a `Task`:
+    ///
+    /// ```swift
+    /// override func onChange(_ change: Change<MyState>) {
+    ///     super.onChange(change)
+    ///     print(change)
+    ///     // Change { currentState: idle, nextState: loading }
+    /// }
+    /// ```
+    ///
+    /// - Parameter change: A value containing `currentState` and `nextState`.
+    open func onChange(_ change: Change<S>) {
+        BlocObserver.shared.onChange(self, change: change)
+    }
+    
+    /// Called after synchronous ``emit(_:)`` calls that occur within an event handler.
+    ///
+    /// `onTransition` extends ``onChange(_:)`` by also capturing the event that
+    /// caused the state change. It only fires when `emit` is called synchronously
+    /// during handler execution — it will **not** fire for emissions made from
+    /// inside a `Task` (use ``onChange(_:)`` for those):
+    ///
+    /// ```swift
+    /// override func onTransition(_ transition: Transition<CounterEvent, Int>) {
+    ///     super.onTransition(transition)
+    ///     print(transition)
+    ///     // Transition { currentState: 0, event: increment, nextState: 1 }
+    /// }
+    /// ```
+    ///
+    /// - Parameter transition: A value containing `currentState`, `event`, and `nextState`.
+    open func onTransition(_ transition: Transition<E, S>) {
+        BlocObserver.shared.onTransition(self, transition: transition)
+    }
+    
+    /// Called when ``addError(_:)`` is invoked.
+    ///
+    /// Override to handle errors at the Bloc level, for example to log them or
+    /// emit a fallback state:
+    ///
+    /// ```swift
+    /// override func onError(_ error: Error) {
+    ///     super.onError(error)
+    ///     print("Bloc error: \(error)")
+    /// }
+    /// ```
+    ///
+    /// - Parameter error: The error that was signalled.
+    open func onError(_ error: Error) {
+        BlocObserver.shared.onError(self, error: error)
     }
 }
