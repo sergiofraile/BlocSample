@@ -9,9 +9,9 @@ import SwiftUI
 
 enum NavigationOptions: Equatable, Hashable, Identifiable {
     
-    case counter, formulaOne, suvs, lorcana, calculator, heartbeat, score
+    case counter, formulaOne, suvs, lorcana, calculator, heartbeat, score, timer
     
-    static let mainPages: [NavigationOptions] = [.counter, .calculator, .heartbeat, .score, .formulaOne, .suvs, .lorcana]
+    static let mainPages: [NavigationOptions] = [.counter, .timer, .calculator, .heartbeat, .score, .formulaOne, .suvs, .lorcana]
     
     var id: String {
         switch self {
@@ -22,6 +22,7 @@ enum NavigationOptions: Equatable, Hashable, Identifiable {
         case .calculator: return "calculator"
         case .heartbeat:  return "heartbeat"
         case .score:      return "score"
+        case .timer:      return "timer"
         }
     }
     
@@ -41,6 +42,8 @@ enum NavigationOptions: Equatable, Hashable, Identifiable {
             return LocalizedStringResource("Heartbeat", comment: "Title for the Heartbeat scoped lifecycle example.")
         case .score:
             return LocalizedStringResource("Score Board", comment: "Title for the Score Board BlocListener + buildWhen example.")
+        case .timer:
+            return LocalizedStringResource("Stopwatch", comment: "Title for the Stopwatch Cubit example.")
         }
     }
     
@@ -53,6 +56,7 @@ enum NavigationOptions: Equatable, Hashable, Identifiable {
         case .calculator: return "Lifecycle hooks: onEvent, onChange, onTransition, onError"
         case .heartbeat:  return "Scoped Bloc: close() on screen dismiss"
         case .score:      return "BlocListener side-effects + buildWhen rebuilds"
+        case .timer:      return "Cubit: direct method calls, no events"
         }
     }
     
@@ -65,6 +69,7 @@ enum NavigationOptions: Equatable, Hashable, Identifiable {
         case .calculator: return "function"
         case .heartbeat:  return "waveform.path.ecg"
         case .score:      return "gamecontroller.fill"
+        case .timer:      return "stopwatch.fill"
         }
     }
     
@@ -84,6 +89,8 @@ enum NavigationOptions: Equatable, Hashable, Identifiable {
             return [Color(red: 0.2, green: 0.8, blue: 0.55), Color(red: 0.1, green: 0.6, blue: 0.4)]
         case .score:
             return [Color(red: 0.55, green: 0.25, blue: 0.90), Color(red: 0.35, green: 0.10, blue: 0.70)]
+        case .timer:
+            return [Color(red: 0.1, green: 0.85, blue: 0.55), Color(red: 0.05, green: 0.60, blue: 0.40)]
         }
     }
     
@@ -96,6 +103,7 @@ enum NavigationOptions: Equatable, Hashable, Identifiable {
         case .calculator: CalculatorView()
         case .heartbeat:  HeartbeatView()
         case .score:      ScoreView()
+        case .timer:      TimerView()
         }
     }
 }

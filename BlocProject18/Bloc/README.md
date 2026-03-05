@@ -11,6 +11,12 @@ A Swift implementation of the [Bloc pattern](https://bloclibrary.dev/) for build
 * [Architecture Comparison](#architecture-comparison)
 * [Getting Started](#getting-started)
 * [Core Concepts](#core-concepts)
+  * [State](#state)
+  * [Events](#events)
+  * [Cubit](#cubit)
+  * [Bloc](#bloc)
+  * [BlocProvider](#blocprovider)
+  * [BlocRegistry](#blocregistry)
 * [Basic Usage](#basic-usage)
   * [Handling Events with Associated Values](#handling-events-with-associated-values)
   * [Async Operations](#async-operations)
@@ -26,6 +32,7 @@ A Swift implementation of the [Bloc pattern](https://bloclibrary.dev/) for build
   * [Event Transformers](#event-transformers)
   * [BlocSelector](#blocselector)
 * [Examples](#examples)
+* [Running the Examples](#running-the-examples)
 * [Documentation](#documentation)
 * [Installation](#installation)
 * [Requirements](#requirements)
@@ -394,6 +401,71 @@ enum LoginEvent: Hashable {
 }
 ```
 
+### Cubit
+
+A `Cubit` is a lightweight state-management class that exposes **direct method calls** instead of events. If you don't need an audit trail of events or the ``EventTransformer`` strategies, reach for a `Cubit` — it is shorter, easier to read, and equally testable.
+
+```swift
+import Bloc
+
+@MainActor
+class CounterCubit: Cubit<Int> {
+
+    init() { super.init(initialState: 0) }
+
+    func increment() { emit(state + 1) }
+    func decrement() { emit(state - 1) }
+    func reset()     { emit(0) }
+}
+```
+
+```swift
+struct CounterView: View {
+    let cubit = BlocRegistry.resolve(CounterCubit.self)
+
+    var body: some View {
+        Text("\(cubit.state)")
+        Button("+") { cubit.increment() }
+        Button("−") { cubit.decrement() }
+    }
+}
+```
+
+#### Cubit vs Bloc
+
+| | Cubit | Bloc |
+|---|---|---|
+| **API style** | Direct method calls | Dispatched events |
+| **Audit trail** | No explicit event log | Full event history via `eventsPublisher` |
+| **Transformers** | Not applicable | `.debounce`, `.restartable`, `.droppable`, … |
+| **`BlocObserver` hooks** | `onCreate`, `onChange`, `onError`, `onClose` | All of the above + `onEvent`, `onTransition` |
+| **Best for** | Simple, well-understood state logic | Complex flows, analytics, rate-limiting |
+
+> **Rule of thumb:** Start with a `Cubit`. Upgrade to a `Bloc` when you need an event log, replay ability, or an event transformer strategy.
+
+#### Lifecycle hooks
+
+`Cubit` exposes the same `onChange` and `onError` override points as `Bloc`:
+
+```swift
+override func onChange(_ change: Change<Int>) {
+    super.onChange(change)   // ← always call super to notify BlocObserver
+    print("\(change.currentState) → \(change.nextState)")
+}
+
+override func onError(_ error: Error) {
+    super.onError(error)
+    crashReporter.log(error)
+}
+
+override func onClose() {
+    super.onClose()
+    tickTask?.cancel()   // cancel any background Task here
+}
+```
+
+---
+
 ### Bloc
 
 The Bloc is where your business logic lives. It receives events and emits new states:
@@ -442,12 +514,13 @@ class LoginBloc: Bloc<LoginState, LoginEvent> {
 
 ### BlocProvider
 
-`BlocProvider` registers Blocs and makes them available throughout your view hierarchy:
+`BlocProvider` registers Blocs **and Cubits** and makes them available throughout your view hierarchy:
 
 ```swift
 BlocProvider(with: [
     CounterBloc(),
     LoginBloc(authService: LiveAuthService()),
+    TimerCubit(),            // ← Cubits and Blocs can be mixed freely
     SettingsBloc()
 ]) {
     MainTabView()
@@ -456,20 +529,20 @@ BlocProvider(with: [
 
 ### BlocRegistry
 
-`BlocRegistry` provides type-safe access to registered Blocs:
+`BlocRegistry` provides type-safe access to any registered `StateEmitter` — both Blocs and Cubits:
 
 ```swift
 // In any view within the BlocProvider hierarchy
 let counterBloc = BlocRegistry.resolve(CounterBloc.self)
-let loginBloc = BlocRegistry.resolve(LoginBloc.self)
+let timerCubit  = BlocRegistry.resolve(TimerCubit.self)
 ```
 
-If you try to resolve a Bloc that hasn't been registered, you'll get a helpful error message:
+If you try to resolve a type that hasn't been registered, you'll get a helpful error message:
 
 ```
-Bloc of type 'SettingsBloc' has not been registered.
+'SettingsBloc' has not been registered.
 
-Currently registered Blocs: [CounterBloc, LoginBloc]
+Currently registered state emitters: [CounterBloc, TimerCubit]
 
 Make sure to register it in your BlocProvider:
 
@@ -1760,7 +1833,150 @@ Lorcana/
 - **Search by Name**: `GET https://api.lorcana-api.com/cards/{cardName}`
 - **Cards by Set**: `GET https://api.lorcana-api.com/cards/fetch?search=set_name={setName}`
 
+### ⏱️ Stopwatch Example
+
+A real-time stopwatch demonstrating `Cubit` — no events, no handlers, no transformers. The `TimerCubit` manages its async tick loop internally and exposes three simple methods.
+
+| Aspect | Details |
+|--------|---------|
+| **Type** | `Cubit<TimerState>` |
+| **State** | `struct TimerState { elapsed: Double, isRunning: Bool }` |
+| **Public API** | `start()`, `pause()`, `reset()` — direct method calls |
+| **Patterns** | Async tick task inside Cubit, `onClose()` for cleanup, `@Observable` state access |
+
+**Location:** `Examples/Timer/`
+
+```swift
+// State — plain struct with a display helper
+struct TimerState: BlocState {
+    let elapsed: Double     // seconds with centisecond precision
+    let isRunning: Bool
+
+    var displayTime: String {
+        let cs = Int(elapsed * 100)
+        return String(format: "%02d:%02d.%02d", cs/6000, (cs%6000)/100, cs%100)
+    }
+}
+
+// Cubit — direct method calls, no events
+@MainActor
+class TimerCubit: Cubit<TimerState> {
+    private var tickTask: Task<Void, Never>?
+
+    init() { super.init(initialState: TimerState(elapsed: 0, isRunning: false)) }
+
+    func start() {
+        guard !state.isRunning else { return }
+        emit(TimerState(elapsed: state.elapsed, isRunning: true))
+        tickTask = Task { [weak self] in
+            while true {
+                try? await Task.sleep(for: .milliseconds(10))
+                guard let self, !Task.isCancelled, self.state.isRunning else { return }
+                self.emit(TimerState(elapsed: self.state.elapsed + 0.01, isRunning: true))
+            }
+        }
+    }
+
+    func pause() {
+        tickTask?.cancel()
+        emit(TimerState(elapsed: state.elapsed, isRunning: false))
+    }
+
+    func reset() {
+        tickTask?.cancel()
+        emit(TimerState(elapsed: 0, isRunning: false))
+    }
+
+    override func onClose() {
+        super.onClose()
+        tickTask?.cancel()
+    }
+}
+
+// View — resolves TimerCubit, accesses state directly via @Observable
+struct TimerView: View {
+    let timerCubit = BlocRegistry.resolve(TimerCubit.self)
+
+    var body: some View {
+        VStack {
+            Text(timerCubit.state.displayTime)
+                .font(.system(size: 68, weight: .thin, design: .monospaced))
+            HStack {
+                Button("Reset") { timerCubit.reset() }
+                Button(timerCubit.state.isRunning ? "Pause" : "Start") {
+                    timerCubit.state.isRunning ? timerCubit.pause() : timerCubit.start()
+                }
+            }
+        }
+    }
+}
+```
+
+**Key Learnings:**
+- **Cubit over Bloc**: No events needed — state transitions are simple method calls
+- **Async lifecycle**: Start a `Task` in a method; cancel it in `pause()`, `reset()`, and `onClose()`
+- **`@Observable` just works**: `timerCubit.state.displayTime` in a view body re-renders automatically
+- **Same registration**: `TimerCubit()` goes in `BlocProvider(with: [...])` alongside any Blocs
+
+**File Structure:**
+```
+Timer/
+├── Blocs/
+│   ├── TimerCubit.swift   # Cubit with start/pause/reset and async tick loop
+│   └── TimerState.swift   # Immutable state with MM:SS.cs display helper
+└── TimerView.swift        # Stopwatch UI with animated ring and toggle button
+```
+
+---
+
 > 📖 See the DocC documentation for a complete walkthrough of each example.
+
+## Running the Examples
+
+### Prerequisites
+
+| Requirement | Version |
+|------------|---------|
+| Xcode | 15.0+ |
+| macOS (host) | 14.0+ (Sonoma) |
+| macOS (run target) | 14.0+ |
+| iOS (run target) | 17.0+ |
+| Swift | 5.9+ |
+
+### Steps
+
+1. **Clone or open the repo**
+   ```bash
+   git clone <repo-url>
+   open BlocProject18/BlocProject18.xcodeproj
+   ```
+
+2. **Select a scheme/target** — the `BlocProject18` scheme runs as a macOS app (optimised for split-view). You can also run it on an iOS simulator.
+
+3. **Build & Run** — press `⌘R` or **Product → Run**.
+
+4. **Explore examples** from the sidebar. Each example is self-contained; Blocs and Cubits are registered in `BlocProject18App.swift`.
+
+### Debugging with Pulse
+
+The app ships with [Pulse](https://github.com/kean/Pulse) in `DEBUG` builds. Every `BlocObserver` lifecycle event (create, change, transition, error, close) is logged automatically.
+
+- Tap/click **Pulse Console** in the sidebar footer to open the live log viewer.
+- Filter by label `"bloc"` to see only Bloc/Cubit lifecycle events.
+- Tap/click **Clear Hydrated Storage** to wipe all `HydratedBloc` persisted state and trigger an immediate reset — useful for testing fresh-launch behaviour.
+
+### Examples at a Glance
+
+| Example | File | Concepts |
+|---------|------|----------|
+| **Counter** | `Examples/Counter/` | `HydratedBloc`, state persistence, `resetToInitialState()` |
+| **Stopwatch** | `Examples/Timer/` | `Cubit`, direct method calls, async tick Task, `onClose()` |
+| **Calculator** | `Examples/Calculator/` | Lifecycle hooks: `onEvent`, `onChange`, `onTransition`, `onError` |
+| **Heartbeat** | `Examples/Heartbeat/` | Scoped `Bloc`, `close()` on screen dismiss |
+| **Score Board** | `Examples/Score/` | `BlocListener` side-effects, `buildWhen` targeted rebuilds |
+| **Formula One** | `Examples/FormulaOne/` | Async API fetching, loading/error state, remote data |
+| **SUVs** | `Examples/SUVs/` | Complex state machine, authentication flow, Repository pattern |
+| **Lorcana** | `Examples/Lorcana/` | Search + `.debounce` transformer, infinite scroll, `BlocSelector`, multi-screen navigation |
 
 ## Documentation
 

@@ -67,7 +67,7 @@ public final class BlocRegistry {
 
     // MARK: - Storage
 
-    private var registeredBlocs: [ObjectIdentifier: any BlocBase] = [:]
+    private var registeredBlocs: [ObjectIdentifier: any StateEmitter] = [:]
 
     /// Flat list used by `deinit`, which cannot access the `@MainActor`-isolated
     /// `registeredBlocs` dictionary directly.
@@ -76,7 +76,7 @@ public final class BlocRegistry {
     /// (also on the main thread, because every reference to `BlocRegistry` is
     /// held by `@MainActor` code). Marked `nonisolated(unsafe)` to satisfy the
     /// compiler's strict concurrency checks.
-    nonisolated(unsafe) private var registeredBlocsForDeinit: [any BlocBase] = []
+    nonisolated(unsafe) private var registeredBlocsForDeinit: [any StateEmitter] = []
 
     /// Whether this registry is still the active one.
     ///
@@ -97,7 +97,7 @@ public final class BlocRegistry {
     ///
     /// - Parameter blocs: The Bloc instances to register.
     @usableFromInline
-    init(with blocs: [any BlocBase]) {
+    init(with blocs: [any StateEmitter]) {
         for bloc in blocs {
             let key = ObjectIdentifier(type(of: bloc))
             registeredBlocs[key] = bloc
@@ -151,7 +151,19 @@ public final class BlocRegistry {
     ///
     /// - Parameter blocType: The type of Bloc to resolve (e.g., `CounterBloc.self`).
     /// - Returns: The registered Bloc instance.
-    public static func resolve<B: BlocBase>(_ blocType: B.Type) -> B {
+    /// Resolves a Bloc or Cubit by its concrete type.
+    ///
+    /// Works for any type that conforms to ``StateEmitter`` — both ``Bloc``
+    /// subclasses and ``Cubit`` subclasses:
+    ///
+    /// ```swift
+    /// let counterBloc = BlocRegistry.resolve(CounterBloc.self)
+    /// let timerCubit  = BlocRegistry.resolve(TimerCubit.self)
+    /// ```
+    ///
+    /// - Parameter type: The concrete type to resolve.
+    /// - Returns: The registered instance.
+    public static func resolve<T: StateEmitter>(_ emitterType: T.Type) -> T {
         guard let registry = shared else {
             fatalError("""
                 BlocRegistry has not been initialized.
@@ -159,38 +171,38 @@ public final class BlocRegistry {
                 Make sure to wrap your view hierarchy with BlocProvider:
                 
                     BlocProvider(with: [
-                        \(B.self)(...)
+                        \(T.self)(...)
                     ]) {
                         YourContentView()
                     }
                 """)
         }
         
-        let key = ObjectIdentifier(B.self)
+        let key = ObjectIdentifier(T.self)
         
-        guard let bloc = registry.registeredBlocs[key] as? B else {
+        guard let emitter = registry.registeredBlocs[key] as? T else {
             let registeredTypes = registry.registeredBlocs.keys
                 .compactMap { registry.registeredBlocs[$0] }
                 .map { String(describing: type(of: $0)) }
                 .joined(separator: ", ")
             
             fatalError("""
-                Bloc of type '\(B.self)' has not been registered.
+                '\(T.self)' has not been registered.
                 
-                Currently registered Blocs: [\(registeredTypes.isEmpty ? "none" : registeredTypes)]
+                Currently registered state emitters: [\(registeredTypes.isEmpty ? "none" : registeredTypes)]
                 
                 Make sure to register it in your BlocProvider:
                 
                     BlocProvider(with: [
-                        \(B.self)(initialState: ...),
-                        // ... other blocs
+                        \(T.self)(...),
+                        // ... other blocs / cubits
                     ]) {
                         YourContentView()
                     }
                 """)
         }
         
-        return bloc
+        return emitter
     }
     
     // MARK: - Hydration Utilities
@@ -232,8 +244,8 @@ public final class BlocRegistry {
             fatalError("BlocRegistry has not been initialized. Wrap your view hierarchy with BlocProvider.")
         }
         
-        for (_, bloc) in registry.registeredBlocs {
-            if let typedBloc = bloc as? Bloc<S, E> {
+        for (_, emitter) in registry.registeredBlocs {
+            if let typedBloc = emitter as? Bloc<S, E> {
                 return typedBloc
             }
         }

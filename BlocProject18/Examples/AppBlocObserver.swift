@@ -25,19 +25,21 @@ final class AppBlocObserver: BlocObserver {
 
     private let label = "bloc"
 
-    override func onCreate(_ bloc: any BlocBase) {
-        super.onCreate(bloc)
+    // Fires for both Blocs and Cubits
+    override func onCreate(_ emitter: any StateEmitter) {
+        super.onCreate(emitter)
         LoggerStore.shared.storeMessage(
             label: label,
             level: .notice,
-            message: "🚀 \(type(of: bloc)) initialized",
+            message: "🚀 \(type(of: emitter)) initialized",
             metadata: [
-                "blocName": .string("\(type(of: bloc))"),
-                "initialState": .string("\(bloc.state)")
+                "blocName": .string("\(type(of: emitter))"),
+                "initialState": .string("\(emitter.state)")
             ]
         )
     }
 
+    // Bloc-only
     override func onEvent(_ bloc: any BlocBase, event: Any) {
         super.onEvent(bloc, event: event)
         LoggerStore.shared.storeMessage(
@@ -52,19 +54,21 @@ final class AppBlocObserver: BlocObserver {
         )
     }
 
-    override func onChange(_ bloc: any BlocBase, change: Any) {
-        super.onChange(bloc, change: change)
+    // Fires for both Blocs and Cubits
+    override func onChange(_ emitter: any StateEmitter, change: Any) {
+        super.onChange(emitter, change: change)
         LoggerStore.shared.storeMessage(
             label: label,
             level: .info,
-            message: "🔄 \(type(of: bloc)): \(change)",
+            message: "🔄 \(type(of: emitter)): \(change)",
             metadata: [
-                "blocName": .string("\(type(of: bloc))"),
+                "blocName": .string("\(type(of: emitter))"),
                 "change": .string("\(change)")
             ]
         )
     }
 
+    // Bloc-only
     override func onTransition(_ bloc: any BlocBase, transition: Any) {
         super.onTransition(bloc, transition: transition)
         LoggerStore.shared.storeMessage(
@@ -78,28 +82,30 @@ final class AppBlocObserver: BlocObserver {
         )
     }
 
-    override func onError(_ bloc: any BlocBase, error: Error) {
-        super.onError(bloc, error: error)
+    // Fires for both Blocs and Cubits
+    override func onError(_ emitter: any StateEmitter, error: Error) {
+        super.onError(emitter, error: error)
         LoggerStore.shared.storeMessage(
             label: label,
             level: .error,
-            message: "❌ \(type(of: bloc)): \(error.localizedDescription)",
+            message: "❌ \(type(of: emitter)): \(error.localizedDescription)",
             metadata: [
-                "blocName": .string("\(type(of: bloc))"),
+                "blocName": .string("\(type(of: emitter))"),
                 "errorType": .string("\(type(of: error))"),
                 "errorDescription": .string(error.localizedDescription)
             ]
         )
     }
 
-    override func onClose(_ bloc: any BlocBase) {
-        super.onClose(bloc)
+    // Fires for both Blocs and Cubits
+    override func onClose(_ emitter: any StateEmitter) {
+        super.onClose(emitter)
         LoggerStore.shared.storeMessage(
             label: label,
             level: .notice,
-            message: "🔒 \(type(of: bloc)) closed",
+            message: "🔒 \(type(of: emitter)) closed",
             metadata: [
-                "blocName": .string("\(type(of: bloc))")
+                "blocName": .string("\(type(of: emitter))")
             ]
         )
     }

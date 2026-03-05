@@ -99,11 +99,11 @@ public struct BlocProvider<Content: View>: View {
     /// ```
     ///
     /// - Parameters:
-    ///   - blocs: An array of Bloc instances to register. Each Bloc type can
-    ///     only be registered once.
+    ///   - blocs: An array of ``Bloc`` or ``Cubit`` instances to register.
+    ///     Each type can only be registered once.
     ///   - content: A view builder that creates the content view. All
-    ///     descendant views can access the registered Blocs.
-    public init(with blocs: [any BlocBase], @ViewBuilder content: @escaping () -> Content) {
+    ///     descendant views can access the registered Blocs and Cubits.
+    public init(with blocs: [any StateEmitter], @ViewBuilder content: @escaping () -> Content) {
         _ = BlocRegistry(with: blocs)
         self.content = content
     }

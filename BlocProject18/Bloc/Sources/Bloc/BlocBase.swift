@@ -7,28 +7,67 @@
 
 import Combine
 
-/// A protocol that defines the interface for all Bloc types.
+// MARK: - StateEmitter
+
+/// The minimal protocol shared by both ``Bloc`` and ``Cubit``.
 ///
-/// `BlocBase` provides a common interface that all Blocs conform to, enabling
-/// type-erased storage and generic operations. The ``Bloc`` class provides the
-/// concrete implementation.
+/// `StateEmitter` defines only what every state-managing object must provide:
+/// observable state, a reactive state publisher, and the ability to be closed.
+/// It is the storage type used by ``BlocRegistry`` and ``BlocProvider``, so
+/// both Blocs and Cubits can be registered side-by-side.
 ///
-/// ## Overview
+/// You will rarely interact with `StateEmitter` directly. Use ``BlocBase`` when
+/// you need event-driven behaviour, or ``Cubit`` when you want direct method
+/// calls without events.
 ///
-/// You typically don't interact with `BlocBase` directly—instead, you subclass
-/// ``Bloc`` and use ``BlocRegistry`` to resolve concrete Bloc types. However,
-/// `BlocBase` is useful for:
+/// ## Topics
 ///
-/// - Storing heterogeneous Bloc collections
-/// - Creating generic utilities that work with any Bloc
-/// - Defining custom Bloc-like types
+/// ### Associated Types
+///
+/// - ``State``
+///
+/// ### Accessing State
+///
+/// - ``state``
+/// - ``statePublisher``
+///
+/// ### Lifecycle
+///
+/// - ``close()``
+@MainActor
+public protocol StateEmitter: AnyObject {
+
+    /// The type of state managed by this emitter. Must conform to ``BlocState``.
+    associatedtype State: BlocState
+
+    /// The current state.
+    var state: State { get }
+
+    /// A Combine publisher that emits every state change.
+    var statePublisher: AnyPublisher<State, Never> { get }
+
+    /// Closes the emitter, releasing resources and completing all publishers.
+    func close()
+}
+
+// MARK: - BlocBase
+
+/// A protocol that defines the interface for all event-driven Bloc types.
+///
+/// `BlocBase` extends ``StateEmitter`` with the full event-processing API —
+/// publishers, handlers, transformers, and error signalling. The ``Bloc`` class
+/// provides the concrete implementation.
+///
+/// Use ``Cubit`` when you only need direct method calls without events. Use
+/// `BlocBase` (via a `Bloc` subclass) when you need:
+/// - An explicit event audit trail
+/// - ``EventTransformer`` strategies (debounce, restartable, …)
+/// - ``eventsPublisher`` / ``errorsPublisher`` Combine pipelines
 ///
 /// ## Type Aliases
 ///
-/// The protocol defines two type aliases for convenience:
-///
-/// - ``Emitter``: A closure type `(State) -> Void` for emitting new states
-/// - ``Handler``: A closure type `(Event, Emitter) -> Void` for handling events
+/// - ``Emitter``: `(State) -> Void` — call to emit a new state.
+/// - ``Handler``: `(Event, Emitter) -> Void` — receives an event and the emitter.
 ///
 /// ## Topics
 ///
@@ -37,166 +76,44 @@ import Combine
 /// - ``State``
 /// - ``Event``
 ///
-/// ### Type Aliases
-///
-/// - ``Emitter``
-/// - ``Handler``
-///
-/// ### Accessing State
-///
-/// - ``state``
-/// - ``statePublisher``
-///
 /// ### Handling Events
 ///
 /// - ``on(_:handler:)``
 /// - ``send(_:)``
 @MainActor
-public protocol BlocBase: AnyObject {
-    
-    /// The type of state managed by this Bloc.
-    ///
-    /// Must conform to ``BlocState`` (which is `Equatable`).
-    associatedtype State: BlocState
-    
-    /// The type of events processed by this Bloc.
-    ///
-    /// Must conform to ``BlocEvent`` (which is `Equatable & Hashable`).
-    associatedtype Event: BlocEvent
-    
-    /// A closure type for emitting new states.
-    ///
-    /// ```swift
-    /// let emit: Emitter = { newState in
-    ///     // State has been updated
-    /// }
-    /// emit(newState)
-    /// ```
-    typealias Emitter = (State) -> Void
-    
-    /// A closure type for handling events.
-    ///
-    /// Handlers receive the event and an emitter to output new states:
-    ///
-    /// ```swift
-    /// let handler: Handler = { event, emit in
-    ///     // Process event and emit new state
-    ///     emit(newState)
-    /// }
-    /// ```
-    typealias Handler = (Event, Emitter) -> Void
-    
-    /// The current state of the Bloc.
-    ///
-    /// This property is observable by SwiftUI when accessed in a view's `body`.
-    /// State changes automatically trigger view updates.
-    ///
-    /// ```swift
-    /// Text("Count: \(bloc.state)")  // Updates when state changes
-    /// ```
-    var state: State { get }
-    
-    /// A Combine publisher that emits state changes.
-    ///
-    /// Use this for reactive patterns or Combine integration:
-    ///
-    /// ```swift
-    /// bloc.statePublisher
-    ///     .sink { state in
-    ///         print("New state: \(state)")
-    ///     }
-    ///     .store(in: &cancellables)
-    /// ```
-    var statePublisher: AnyPublisher<State, Never> { get }
-    
-    /// A Combine publisher that emits events as they are dispatched to the Bloc.
-    ///
-    /// Subscribe to this publisher to observe every event the Bloc receives,
-    /// in the order they are dispatched:
-    ///
-    /// ```swift
-    /// counterBloc.eventsPublisher
-    ///     .sink { event in print("Received: \(event)") }
-    ///     .store(in: &cancellables)
-    /// ```
-    var eventsPublisher: AnyPublisher<Event, Never> { get }
-    
-    /// A Combine publisher that emits errors signalled via ``addError(_:)``.
-    ///
-    /// ```swift
-    /// counterBloc.errorsPublisher
-    ///     .sink { error in print("Bloc error: \(error)") }
-    ///     .store(in: &cancellables)
-    /// ```
-    var errorsPublisher: AnyPublisher<Error, Never> { get }
-    
-    /// Registers a handler for a specific event, with an optional transformer.
-    ///
-    /// - Parameters:
-    ///   - event: The event to handle.
-    ///   - transformer: Controls how the handler is invoked. Defaults to ``EventTransformer/sequential``.
-    ///   - handler: A closure that processes the event and emits new states.
-    func on(_ event: Event, transformer: EventTransformer, handler: @escaping Handler)
-    
-    /// Sends an event to the Bloc for processing.
-    ///
-    /// - Parameter event: The event to send.
-    func send(_ event: Event)
-    
-    /// Signals that an error has occurred inside the Bloc.
-    ///
-    /// The error is broadcast on ``errorsPublisher`` so observers can react
-    /// without coupling error handling to the state type:
-    ///
-    /// ```swift
-    /// on(.fetchData) { [weak self] event, emit in
-    ///     guard let self else { return }
-    ///     do {
-    ///         let data = try await api.fetchData()
-    ///         emit(.loaded(data))
-    ///     } catch {
-    ///         addError(error)
-    ///         emit(.idle)
-    ///     }
-    /// }
-    /// ```
-    ///
-    /// - Parameter error: The error that occurred.
-    func addError(_ error: Error)
+public protocol BlocBase: StateEmitter {
 
-    /// Closes the Bloc, cancelling subscriptions, active transformer tasks, and completing all publishers.
-    ///
-    /// After `close()` returns:
-    /// - ``send(_:)`` and ``emit(_:)`` become no-ops.
-    /// - ``eventsPublisher``, ``errorsPublisher``, and ``statePublisher``
-    ///   send their completion signal to all subscribers.
-    /// - ``BlocObserver/onClose(_:)`` is called on the global observer.
-    ///
-    /// `close()` is idempotent — calling it multiple times is safe.
-    ///
-    /// When using ``BlocProvider``, blocs registered at the **App** level are
-    /// closed automatically when the application terminates. For **scoped** blocs
-    /// (e.g. tied to a sheet or a navigation destination), call `close()` in
-    /// `.onDisappear` or use a scoped `BlocProvider`:
-    ///
-    /// ```swift
-    /// .onDisappear {
-    ///     BlocRegistry.resolve(MyBloc.self).close()
-    /// }
-    /// ```
-    func close()
+    /// The type of events processed by this Bloc.
+    associatedtype Event: BlocEvent
+
+    /// A closure type for emitting new states from inside a handler.
+    typealias Emitter = (State) -> Void
+
+    /// A closure type for event handlers.
+    typealias Handler = (Event, Emitter) -> Void
+
+    /// A Combine publisher that emits every dispatched event, in order.
+    var eventsPublisher: AnyPublisher<Event, Never> { get }
+
+    /// A Combine publisher that emits errors signalled via ``addError(_:)``.
+    var errorsPublisher: AnyPublisher<Error, Never> { get }
+
+    /// Registers a handler for a specific event, with an optional transformer.
+    func on(_ event: Event, transformer: EventTransformer, handler: @escaping Handler)
+
+    /// Sends an event to the Bloc for processing.
+    func send(_ event: Event)
+
+    /// Signals an error without encoding it into the state type.
+    func addError(_ error: Error)
 }
 
 // MARK: - Default parameter convenience
 
 extension BlocBase {
-    /// Convenience overload that omits the transformer, defaulting to ``EventTransformer/sequential``.
+    /// Convenience overload that uses the default ``EventTransformer/sequential`` transformer.
     ///
-    /// This matches the pre-transformer API so existing call sites require no changes:
-    ///
-    /// ```swift
-    /// on(.increment) { event, emit in emit(state + 1) }  // still compiles
-    /// ```
+    /// All existing `on(.event) { … }` call sites continue to compile unchanged.
     public func on(_ event: Event, handler: @escaping Handler) {
         on(event, transformer: .sequential, handler: handler)
     }
