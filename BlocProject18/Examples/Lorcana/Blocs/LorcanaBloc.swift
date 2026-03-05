@@ -9,6 +9,10 @@ import Bloc
 import Foundation
 
 /// Bloc for managing Lorcana card browsing and search.
+///
+/// The `.search` event is handled with a `.debounce(.milliseconds(300))` transformer,
+/// which means the search network call is only triggered after 300 ms of silence.
+/// This replaces manual Task-cancellation debounce in the view layer.
 @MainActor
 class LorcanaBloc: Bloc<LorcanaState, LorcanaEvent> {
 
@@ -19,36 +23,47 @@ class LorcanaBloc: Bloc<LorcanaState, LorcanaEvent> {
         self.networkService = networkService
         super.init(initialState: .initial)
 
-        self.on(.clear) { _, emit in
+        on(.clear) { _, emit in
             emit(.initial)
         }
-    }
 
-    override func mapEventToState(event: LorcanaEvent, emit: @escaping Emitter) {
-        switch event {
-        case .clear:
-            break // handled by registered handler
+        on(.fetchAllCards) { [weak self] _, _ in
+            guard let self else { return }
+            Task { await self.fetchAllCards() }
+        }
 
-        case .fetchAllCards:
-            Task { await fetchAllCards(emit: emit) }
+        on(.loadNextPage) { [weak self] _, _ in
+            guard let self else { return }
+            Task { await self.loadNextPage() }
+        }
 
-        case .loadNextPage:
-            Task { await loadNextPage(emit: emit) }
+        on(.loadSets) { [weak self] _, _ in
+            guard let self else { return }
+            Task { await self.loadSets() }
+        }
 
-        case .search(let query):
-            Task { await searchCards(query: query, emit: emit) }
+        // Debounce search: the handler fires only after 300 ms of no new
+        // search events. Each keystroke resets the timer, so the API call
+        // is made once the user pauses typing.
+        on(
+            where: { if case .search = $0 { return true }; return false },
+            transformer: .debounce(.milliseconds(300))
+        ) { [weak self] event, _ in
+            guard let self, case .search(let query) = event else { return }
+            Task { await self.searchCards(query: query) }
+        }
 
-        case .loadSet(let setName):
-            Task { await loadSetCards(setName: setName, emit: emit) }
-
-        case .loadSets:
-            Task { await loadSets(emit: emit) }
+        on(
+            where: { if case .loadSet = $0 { return true }; return false }
+        ) { [weak self] event, _ in
+            guard let self, case .loadSet(let setName) = event else { return }
+            Task { await self.loadSetCards(setName: setName) }
         }
     }
 
-    // MARK: - Private Methods
+    // MARK: - Async handlers
 
-    private func fetchAllCards(emit: @escaping Emitter) async {
+    private func fetchAllCards() async {
         var newState = state
         newState.isLoading = true
         newState.error = nil
@@ -73,7 +88,7 @@ class LorcanaBloc: Bloc<LorcanaState, LorcanaEvent> {
         }
     }
 
-    private func loadNextPage(emit: @escaping Emitter) async {
+    private func loadNextPage() async {
         guard !state.isLoadingMore && !state.isLoading && state.hasMorePages else { return }
 
         var newState = state
@@ -105,7 +120,8 @@ class LorcanaBloc: Bloc<LorcanaState, LorcanaEvent> {
         }
     }
 
-    private func searchCards(query: String, emit: @escaping Emitter) async {
+    private func searchCards(query: String) async {
+        guard query.count >= 3 else { return }
         var newState = state
         newState.isLoading = true
         newState.error = nil
@@ -130,7 +146,7 @@ class LorcanaBloc: Bloc<LorcanaState, LorcanaEvent> {
         }
     }
 
-    private func loadSetCards(setName: String, emit: @escaping Emitter) async {
+    private func loadSetCards(setName: String) async {
         var newState = state
         newState.isLoading = true
         newState.error = nil
@@ -154,7 +170,7 @@ class LorcanaBloc: Bloc<LorcanaState, LorcanaEvent> {
         }
     }
 
-    private func loadSets(emit: @escaping Emitter) async {
+    private func loadSets() async {
         do {
             let sets = try await networkService.fetchSets()
             var newState = state

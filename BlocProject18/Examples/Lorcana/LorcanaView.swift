@@ -13,7 +13,6 @@ struct LorcanaView: View {
     let lorcanaBloc = BlocRegistry.resolve(LorcanaBloc.self)
     
     @State private var searchText: String = ""
-    @State private var searchTask: Task<Void, Never>?
     
     var body: some View {
         NavigationStack {
@@ -72,13 +71,18 @@ struct LorcanaView: View {
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .onChange(of: searchText) { _, newValue in
-                        handleSearchChange(newValue)
+                        if newValue.isEmpty {
+                            lorcanaBloc.send(.clear)
+                        } else {
+                            // Debounce is handled by the .debounce transformer
+                            // registered in LorcanaBloc — no manual task needed.
+                            lorcanaBloc.send(.search(query: newValue))
+                        }
                     }
                 
                 if !searchText.isEmpty {
                     Button {
                         searchText = ""
-                        searchTask?.cancel()
                         lorcanaBloc.send(.clear)
                     } label: {
                         Image(systemName: "xmark.circle.fill")
@@ -100,7 +104,6 @@ struct LorcanaView: View {
             // Fetch All button
             Button {
                 searchText = ""
-                searchTask?.cancel()
                 lorcanaBloc.send(.fetchAllCards)
             } label: {
                 Image(systemName: "sparkles")
@@ -473,24 +476,6 @@ struct LorcanaView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    // MARK: - Search Logic
-    
-    private func handleSearchChange(_ newValue: String) {
-        searchTask?.cancel()
-        
-        guard newValue.count >= 3 else {
-            if newValue.isEmpty {
-                lorcanaBloc.send(.clear)
-            }
-            return
-        }
-        
-        searchTask = Task {
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            guard !Task.isCancelled else { return }
-            lorcanaBloc.send(.search(query: newValue))
-        }
-    }
 }
 
 #Preview {

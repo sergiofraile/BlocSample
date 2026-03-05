@@ -23,6 +23,7 @@ A Swift implementation of the [Bloc pattern](https://bloclibrary.dev/) for build
   * [HydratedBloc — State Persistence](#hydratedbloc--state-persistence)
   * [BlocListener](#bloclistener)
   * [buildWhen / listenWhen](#buildwhen--listenwhen)
+  * [Event Transformers](#event-transformers)
 * [Examples](#examples)
 * [Documentation](#documentation)
 * [Installation](#installation)
@@ -1142,6 +1143,143 @@ BlocListener(DataBloc.self,
 
 ---
 
+## Event Transformers
+
+Event Transformers give you fine-grained control over how events are processed when a new
+event of the same type arrives while a previous handler invocation is still active or pending.
+
+Attach a transformer when registering a handler:
+
+```swift
+on(.search, transformer: .debounce(.milliseconds(300))) { event, emit in
+    Task { await performSearch(emit: emit) }
+}
+```
+
+### Available transformers
+
+| Transformer | Behaviour | Best for |
+|-------------|-----------|----------|
+| `.sequential` | Default. Calls the handler synchronously and immediately, one at a time. | Instant, non-overlapping state updates (counters, toggles). |
+| `.concurrent` | Runs each handler invocation in its own `Task`; all run in parallel. | Truly independent fire-and-forget operations. |
+| `.droppable` | Ignores new events while the previous handler `Task` is still active. | Expensive one-shot operations (e.g. file export) that should not be duplicated. |
+| `.restartable` | Cancels the active handler `Task` and starts fresh with the new event. | "Load latest" patterns where only the most recent request matters. |
+| `.debounce(_:)` | Waits for a quiet period; each new event resets the timer. | Live search — fire the API call only after the user stops typing. |
+| `.throttle(_:)` | Fires immediately, then ignores events for the duration. | Scroll-triggered pagination that should not fire more than once per second. |
+
+### Sequential (default)
+
+No change needed — the default behaviour is sequential:
+
+```swift
+on(.increment) { [weak self] event, emit in
+    guard let self else { return }
+    emit(state + 1)   // called synchronously, onTransition fires
+}
+```
+
+### Concurrent
+
+Use when events are independent and the handler completes quickly:
+
+```swift
+on(.logAnalyticsEvent, transformer: .concurrent) { event, emit in
+    Task { await analytics.log(event) }
+}
+```
+
+### Droppable
+
+Prevent duplicate operations while one is already in-flight:
+
+```swift
+on(.exportPDF, transformer: .droppable) { [weak self] event, emit in
+    guard let self else { return }
+    emit(state.with(isExporting: true))
+    Task { await self.generateAndSharePDF(emit: emit) }
+}
+// A second .exportPDF event while the Task is active is silently ignored.
+```
+
+### Restartable
+
+Always run the newest event, cancelling the previous one:
+
+```swift
+on(.loadProfile, transformer: .restartable) { [weak self] event, emit in
+    guard let self else { return }
+    // If a new .loadProfile arrives, this Task is cancelled at the next
+    // suspension point (e.g. Task.sleep or await network call).
+    do {
+        try await Task.sleep(for: .milliseconds(0)) // cooperative cancellation point
+        let profile = try await api.fetchProfile()
+        emit(.loaded(profile))
+    } catch { /* cancelled */ }
+}
+```
+
+### Debounce
+
+Wait for the user to stop typing before making a network call:
+
+```swift
+// Match any .search event regardless of its associated query value
+on(
+    where: { if case .search = $0 { return true }; return false },
+    transformer: .debounce(.milliseconds(300))
+) { [weak self] event, emit in
+    guard let self, case .search(let query) = event else { return }
+    Task { await self.performSearch(query: query, emit: emit) }
+}
+```
+
+The `on(where:transformer:handler:)` overload accepts a predicate — useful for
+events with associated values where every value is unique and cannot be matched
+with simple equality.
+
+### Throttle
+
+Rate-limit an expensive operation to at most once per interval:
+
+```swift
+on(.refresh, transformer: .throttle(.seconds(2))) { [weak self] event, emit in
+    guard let self else { return }
+    Task { await self.refresh(emit: emit) }
+}
+// Rapid .refresh taps are ignored for 2 seconds after the first fires.
+```
+
+### Using `on(where:)` for events with associated values
+
+When an event carries associated values (e.g. `case search(query: String)`),
+each sent value is a distinct `Hashable` key, so `on(.search(query: ""))` would
+only match the empty-string case. Use `on(where:)` to match the entire case family:
+
+```swift
+// Matches any .search event, whatever the query
+on(
+    where: { if case .search = $0 { return true }; return false },
+    transformer: .debounce(.milliseconds(300))
+) { event, emit in
+    guard case .search(let query) = event else { return }
+    Task { await searchCards(query: query, emit: emit) }
+}
+
+// Matches any .loadSet event
+on(where: { if case .loadSet = $0 { return true }; return false }) { event, emit in
+    guard case .loadSet(let name) = event else { return }
+    Task { await loadSetCards(name: name, emit: emit) }
+}
+```
+
+> **Demo:** Open the **Lorcana** example. The search field previously managed a
+> manual debounce `Task` in the view. With `.debounce(.milliseconds(300))` on the
+> `.search` handler, the view simply calls `bloc.send(.search(query: newValue))`
+> on every keystroke — the Bloc handles the timing. The view's `handleSearchChange`
+> method and `@State private var searchTask` are gone.
+
+---
+
 ## Examples
 
 The project includes four example implementations that demonstrate different complexity levels:
@@ -1404,7 +1542,7 @@ A comprehensive trading card game browser demonstrating search, pagination with 
 |--------|---------|
 | **State** | `struct` with cards, sets, pagination, loading states, and search query |
 | **Events** | `fetchAllCards`, `search(query)`, `loadNextPage`, `loadSet(name)`, `clear` |
-| **Patterns** | Debounced search, infinite scroll pagination, async image loading, multi-screen navigation, ink color theming |
+| **Patterns** | Debounced search via `.debounce` transformer, infinite scroll pagination, async image loading, multi-screen navigation, ink color theming |
 
 **Location:** `Examples/Lorcana/`
 
@@ -1451,15 +1589,22 @@ class LorcanaBloc: Bloc<LorcanaState, LorcanaEvent> {
 
 **Key Features:**
 
-1. **Debounced Search** - Searches after 3+ characters with debounce:
+1. **Debounced Search** — Powered by the `.debounce` event transformer in `LorcanaBloc`. The handler fires only after 300 ms of no new `.search` events, eliminating manual task management in the view:
 ```swift
-private func handleSearchChange(_ newValue: String) {
-    searchTask?.cancel()
-    guard newValue.count >= 3 else { return }
-    
-    searchTask = Task {
-        try? await Task.sleep(nanoseconds: 300_000_000) // 0.3s debounce
-        guard !Task.isCancelled else { return }
+// In LorcanaBloc — debounce is declared once at the Bloc level
+on(
+    where: { if case .search = $0 { return true }; return false },
+    transformer: .debounce(.milliseconds(300))
+) { [weak self] event, emit in
+    guard let self, case .search(let query) = event, query.count >= 3 else { return }
+    Task { await self.searchCards(query: query, emit: emit) }
+}
+
+// In LorcanaView — just send the event on every keystroke; no Task management
+.onChange(of: searchText) { _, newValue in
+    if newValue.isEmpty {
+        lorcanaBloc.send(.clear)
+    } else {
         lorcanaBloc.send(.search(query: newValue))
     }
 }
@@ -1501,7 +1646,7 @@ func inkColorForCard(_ card: LorcanaCard) -> Color {
 ```
 
 **Key Learnings:**
-- **Debounced Search**: Cancel pending tasks and wait before triggering API calls
+- **Debounced Search**: Use `.debounce` event transformer — the Bloc handles timing, the view just sends events
 - **Infinite Scroll**: Check if last item is visible to trigger next page load
 - **Pagination State**: Track `currentPage`, `hasMorePages`, and `isLoadingMore` separately
 - **Multi-View Navigation**: Pass data between views via NavigationLink

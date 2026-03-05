@@ -6,6 +6,7 @@
 //
 
 import Combine
+import Foundation
 import Observation
 
 /// A predictable state management class that processes events and emits state changes.
@@ -193,10 +194,38 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     }
     
     // MARK: - Handlers
-    
+
+    /// Bundles a handler closure with its associated event transformer.
+    private struct RegisteredHandler {
+        let handler: Handler
+        let transformer: EventTransformer
+    }
+
+    /// Bundles a predicate-based handler closure with its transformer.
+    ///
+    /// Used by ``on(where:transformer:handler:)`` for events with associated
+    /// values that cannot be matched by exact equality.
+    private struct PatternHandler {
+        let id: UUID
+        let matches: (E) -> Bool
+        let handler: Handler
+        let transformer: EventTransformer
+    }
+
     @ObservationIgnored
-    var registeredHandlers: [E: Handler] = [:]
-    
+    private var registeredHandlers: [E: RegisteredHandler] = [:]
+
+    @ObservationIgnored
+    private var patternHandlers: [PatternHandler] = []
+
+    /// Tracks active Tasks for transformers that need lifecycle management
+    /// (droppable, restartable, debounce, throttle).
+    ///
+    /// Keys are either an exact event value (`E`) or a `UUID` for pattern handlers,
+    /// both wrapped in `AnyHashable`.
+    @ObservationIgnored
+    private var activeTasks: [AnyHashable: Task<Void, Never>] = [:]
+
     @ObservationIgnored
     private var cancellables = Set<AnyCancellable>()
     
@@ -302,19 +331,22 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     
     // MARK: - Event Handling
     
-    /// Registers a handler for a specific event.
+    /// Registers a handler for a specific event, with an optional transformer that controls
+    /// how the handler is invoked when events arrive rapidly.
     ///
     /// Use this method to define how the Bloc responds to events. The handler
     /// receives the event and an `emit` function to output new states.
     ///
     /// ```swift
+    /// // Default sequential transformer — existing behaviour
     /// on(.increment) { [weak self] event, emit in
     ///     guard let self else { return }
     ///     emit(self.state + 1)
     /// }
     ///
-    /// on(.reset) { event, emit in
-    ///     emit(0)  // No need for self if not accessing state
+    /// // Only allow one refresh at a time — drop while active
+    /// on(.refresh, transformer: .droppable) { event, emit in
+    ///     Task { await refresh(emit: emit) }
     /// }
     /// ```
     ///
@@ -322,10 +354,37 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     ///   to avoid retain cycles.
     ///
     /// - Parameters:
-    ///   - event: The event to handle.
+    ///   - event: The specific event value to handle. Events must match by equality.
+    ///     For events with associated values, use ``on(where:transformer:handler:)`` instead.
+    ///   - transformer: Controls event processing strategy. Defaults to ``EventTransformer/sequential``.
     ///   - handler: A closure that processes the event and emits new states.
-    public func on(_ event: E, handler: @escaping Handler) {
-        registeredHandlers[event] = handler
+    public func on(_ event: E, transformer: EventTransformer = .sequential, handler: @escaping Handler) {
+        registeredHandlers[event] = RegisteredHandler(handler: handler, transformer: transformer)
+    }
+
+    /// Registers a handler for events that match a predicate, with an optional transformer.
+    ///
+    /// Use this overload when the event has associated values — for example `search(query:)` —
+    /// where each event value is unique and cannot be matched with simple equality:
+    ///
+    /// ```swift
+    /// // Debounce every search event, regardless of its query value
+    /// on(where: { if case .search = $0 { return true }; return false },
+    ///    transformer: .debounce(.milliseconds(300))) { event, emit in
+    ///     if case .search(let query) = event {
+    ///         Task { await searchCards(query: query, emit: emit) }
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// Pattern handlers are evaluated in registration order. The first match wins.
+    ///
+    /// - Parameters:
+    ///   - matches: A predicate that returns `true` for events this handler should process.
+    ///   - transformer: Controls event processing strategy. Defaults to ``EventTransformer/sequential``.
+    ///   - handler: A closure that processes the event and emits new states.
+    public func on(where matches: @escaping (E) -> Bool, transformer: EventTransformer = .sequential, handler: @escaping Handler) {
+        patternHandlers.append(PatternHandler(id: UUID(), matches: matches, handler: handler, transformer: transformer))
     }
     
     /// Override this method for custom or dynamic event-to-state mapping.
@@ -405,25 +464,99 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     /// }
     /// ```
     ///
-    /// Events are processed synchronously. If a handler is registered for the
-    /// event via ``on(_:handler:)``, it will be called. Otherwise,
-    /// ``mapEventToState(event:emit:)`` is invoked.
+    /// The event is dispatched according to the transformer registered with
+    /// ``on(_:transformer:handler:)``. The default ``EventTransformer/sequential``
+    /// transformer processes events synchronously and immediately.
     ///
     /// - Parameter event: The event to send.
     public func send(_ event: E) {
         guard !isClosed else { return }
         onEvent(event)
-        // Deposit the event so that any synchronous emit() call inside the handler
-        // can read it to build a Transition. Cleared immediately after the handler
-        // returns — see the currentEvent property comment for the full rationale.
-        currentEvent = event
-        if let handler = registeredHandlers[event] {
-            handler(event, emit)
+
+        if let registered = registeredHandlers[event] {
+            dispatch(event: event, key: AnyHashable(event), handler: registered.handler, transformer: registered.transformer)
+        } else if let pattern = patternHandlers.first(where: { $0.matches(event) }) {
+            dispatch(event: event, key: AnyHashable(pattern.id), handler: pattern.handler, transformer: pattern.transformer)
         } else {
+            // Fall back to mapEventToState (always sequential / synchronous)
+            currentEvent = event
             mapEventToState(event: event, emit: emit)
+            currentEvent = nil
         }
-        currentEvent = nil  // release: emit() calls from async Tasks will see nil
+
         eventSubject.send(event)
+    }
+
+    /// Executes `handler` for `event` according to the given `transformer` strategy.
+    ///
+    /// - Parameters:
+    ///   - event: The event being dispatched.
+    ///   - key: Stable `AnyHashable` key used to track the active `Task` for this
+    ///     event slot (exact-value events use the event itself; pattern handlers use
+    ///     their registration `UUID`).
+    ///   - handler: The handler closure to invoke.
+    ///   - transformer: Governs when and how `handler` is invoked.
+    private func dispatch(event: E, key: AnyHashable, handler: @escaping Handler, transformer: EventTransformer) {
+        switch transformer.strategy {
+
+        case .sequential:
+            // Synchronous dispatch — preserves onTransition firing.
+            currentEvent = event
+            handler(event, emit)
+            currentEvent = nil
+
+        case .concurrent:
+            // Each event gets its own Task; no coordination between them.
+            Task { [weak self] in
+                guard let self else { return }
+                handler(event, self.emit)
+            }
+
+        case .droppable:
+            // Silently ignore the event while a Task for this slot is running.
+            guard activeTasks[key] == nil else { return }
+            activeTasks[key] = Task { [weak self, key] in
+                guard let self else { return }
+                handler(event, self.emit)
+                self.activeTasks[key] = nil
+            }
+
+        case .restartable:
+            // Cancel any pending Task for this slot before starting a new one.
+            activeTasks[key]?.cancel()
+            activeTasks[key] = Task { [weak self, key] in
+                guard let self, !Task.isCancelled else { return }
+                handler(event, self.emit)
+                self.activeTasks[key] = nil
+            }
+
+        case .debounce(let duration):
+            // Cancel the pending timer and restart it. Handler fires only after
+            // `duration` elapses without a new event arriving.
+            activeTasks[key]?.cancel()
+            activeTasks[key] = Task { [weak self, key] in
+                guard let self else { return }
+                do {
+                    try await Task.sleep(for: duration)
+                    handler(event, self.emit)
+                } catch {
+                    // Task was cancelled before the debounce period elapsed.
+                }
+                self.activeTasks[key] = nil
+            }
+
+        case .throttle(let duration):
+            // Fire immediately, then ignore events for `duration`.
+            guard activeTasks[key] == nil else { return }
+            currentEvent = event
+            handler(event, emit)
+            currentEvent = nil
+            activeTasks[key] = Task { [weak self, key] in
+                guard let self else { return }
+                try? await Task.sleep(for: duration)
+                self.activeTasks[key] = nil
+            }
+        }
     }
     
     // MARK: - Lifecycle Hooks
@@ -519,6 +652,8 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     public func close() {
         guard !isClosed else { return }
         isClosed = true
+        activeTasks.values.forEach { $0.cancel() }
+        activeTasks.removeAll()
         cancellables.removeAll()
         eventSubject.send(completion: .finished)
         errorSubject.send(completion: .finished)

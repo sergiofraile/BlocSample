@@ -130,12 +130,13 @@ public protocol BlocBase: AnyObject {
     /// ```
     var errorsPublisher: AnyPublisher<Error, Never> { get }
     
-    /// Registers a handler for a specific event.
+    /// Registers a handler for a specific event, with an optional transformer.
     ///
     /// - Parameters:
     ///   - event: The event to handle.
+    ///   - transformer: Controls how the handler is invoked. Defaults to ``EventTransformer/sequential``.
     ///   - handler: A closure that processes the event and emits new states.
-    func on(_ event: Event, handler: @escaping Handler)
+    func on(_ event: Event, transformer: EventTransformer, handler: @escaping Handler)
     
     /// Sends an event to the Bloc for processing.
     ///
@@ -163,7 +164,7 @@ public protocol BlocBase: AnyObject {
     /// - Parameter error: The error that occurred.
     func addError(_ error: Error)
 
-    /// Closes the Bloc, cancelling subscriptions and completing all publishers.
+    /// Closes the Bloc, cancelling subscriptions, active transformer tasks, and completing all publishers.
     ///
     /// After `close()` returns:
     /// - ``send(_:)`` and ``emit(_:)`` become no-ops.
@@ -184,4 +185,19 @@ public protocol BlocBase: AnyObject {
     /// }
     /// ```
     func close()
+}
+
+// MARK: - Default parameter convenience
+
+extension BlocBase {
+    /// Convenience overload that omits the transformer, defaulting to ``EventTransformer/sequential``.
+    ///
+    /// This matches the pre-transformer API so existing call sites require no changes:
+    ///
+    /// ```swift
+    /// on(.increment) { event, emit in emit(state + 1) }  // still compiles
+    /// ```
+    public func on(_ event: Event, handler: @escaping Handler) {
+        on(event, transformer: .sequential, handler: handler)
+    }
 }
