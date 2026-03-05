@@ -14,7 +14,7 @@ struct LorcanaCardDetailView: View {
     
     var body: some View {
         ZStack {
-            // Background gradient matching ink color
+            // Background gradient matching ink colour
             LinearGradient(
                 colors: [
                     inkColorForCard(card).opacity(0.15),
@@ -27,40 +27,30 @@ struct LorcanaCardDetailView: View {
             .ignoresSafeArea()
             
             ScrollView {
-                VStack(spacing: 24) {
-                    // Card image
+                VStack(spacing: Theme.Spacing.xxl) {
                     cardImageSection
-                    
-                    // Card name and type
                     headerSection
                     
-                    // Stats row
-                    if hasStats {
-                        statsSection
-                    }
+                    if hasStats { statsSection }
                     
-                    // Card details
                     detailsSection
                     
-                    // Set info (tappable)
                     if let setName = card.setName {
                         setSection(setName: setName)
                     }
                     
-                    // Flavor text
                     if let flavorText = card.flavorText, !flavorText.isEmpty {
                         flavorTextSection(flavorText: flavorText)
                     }
                     
-                    // Body text / abilities
                     if let bodyText = card.bodyText, !bodyText.isEmpty {
                         bodyTextSection(bodyText: bodyText)
                     }
                     
-                    Spacer(minLength: 40)
+                    Spacer(minLength: Theme.Spacing.huge)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
+                .padding(.horizontal, Theme.Spacing.xl)
+                .padding(.top, Theme.Spacing.xl)
             }
         }
         .navigationTitle(card.name)
@@ -80,7 +70,7 @@ struct LorcanaCardDetailView: View {
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.xxl))
                     .shadow(color: inkColorForCard(card).opacity(0.5), radius: 20, y: 10)
             case .failure:
                 cardPlaceholder
@@ -96,7 +86,7 @@ struct LorcanaCardDetailView: View {
     }
     
     private var cardPlaceholder: some View {
-        RoundedRectangle(cornerRadius: 16)
+        RoundedRectangle(cornerRadius: Theme.Radius.xxl)
             .fill(
                 LinearGradient(
                     colors: [inkColorForCard(card), inkColorForCard(card).opacity(0.6)],
@@ -107,24 +97,24 @@ struct LorcanaCardDetailView: View {
             .aspectRatio(0.714, contentMode: .fit)
             .overlay(
                 Image(systemName: "photo")
-                    .font(.system(size: 40))
-                    .foregroundColor(.white.opacity(0.5))
+                    .font(Theme.Font.display(40))
+                    .foregroundColor(Theme.Palette.textTertiary)
             )
     }
     
     // MARK: - Header
     
     private var headerSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Theme.Spacing.sm) {
             Text(card.name)
-                .font(.system(size: 28, weight: .bold, design: .serif))
-                .foregroundColor(.white)
+                .font(Theme.Font.title(.bold, .serif))
+                .foregroundColor(Theme.Palette.textPrimary)
                 .multilineTextAlignment(.center)
             
-            HStack(spacing: 12) {
+            HStack(spacing: Theme.Spacing.md) {
                 if let type = card.type {
                     Text(type.uppercased())
-                        .font(.system(size: 12, weight: .bold))
+                        .font(Theme.Font.footnote(.bold))
                         .tracking(2)
                         .foregroundColor(inkColorForCard(card))
                 }
@@ -133,7 +123,7 @@ struct LorcanaCardDetailView: View {
                     Text("•")
                         .foregroundColor(.gray)
                     Text(classifications)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(Theme.Font.footnote(.medium))
                         .foregroundColor(.gray)
                 }
             }
@@ -146,10 +136,10 @@ struct LorcanaCardDetailView: View {
     
     private func rarityBadge(rarity: String) -> some View {
         Text(rarity)
-            .font(.system(size: 11, weight: .bold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .font(Theme.Font.caption(.bold))
+            .foregroundColor(Theme.Palette.textPrimary)
+            .padding(.horizontal, Theme.Spacing.md)
+            .padding(.vertical, Theme.Spacing.xs)
             .background(
                 Capsule()
                     .fill(rarityColor(rarity))
@@ -175,7 +165,7 @@ struct LorcanaCardDetailView: View {
     }
     
     private var statsSection: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: Theme.Spacing.lg) {
             if let cost = card.cost {
                 statCard(title: "INK COST", value: "\(cost)", icon: "drop.fill", color: inkColorForCard(card))
             }
@@ -189,31 +179,31 @@ struct LorcanaCardDetailView: View {
                 statCard(title: "LORE", value: "\(lore)", icon: "star.fill", color: .yellow)
             }
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, Theme.Spacing.xxs)
     }
     
     private func statCard(title: String, value: String, icon: String, color: Color) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Theme.Spacing.sm) {
             Image(systemName: icon)
-                .font(.system(size: 20))
+                .font(Theme.Font.display(20))
                 .foregroundColor(color)
             
             Text(value)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+                .font(Theme.Font.display(24, weight: .bold, design: .rounded))
+                .foregroundColor(Theme.Palette.textPrimary)
             
             Text(title)
-                .font(.system(size: 9, weight: .bold))
+                .font(Theme.Font.micro(.bold))
                 .tracking(1)
                 .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.vertical, Theme.Spacing.lg)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.05))
+            RoundedRectangle(cornerRadius: Theme.Radius.lg)
+                .fill(Theme.Palette.surfaceSubtle)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: Theme.Radius.lg)
                         .stroke(color.opacity(0.3), lineWidth: 1)
                 )
         )
@@ -222,7 +212,7 @@ struct LorcanaCardDetailView: View {
     // MARK: - Details
     
     private var detailsSection: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Theme.Spacing.md) {
             if let color = card.color {
                 detailRow(label: "Ink Color", value: color, icon: "paintpalette.fill")
             }
@@ -245,29 +235,29 @@ struct LorcanaCardDetailView: View {
                 detailRow(label: "Card Number", value: "\(cardNum) / \(setNum)", icon: "number")
             }
         }
-        .padding(16)
+        .padding(Theme.Spacing.lg)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.05))
+            RoundedRectangle(cornerRadius: Theme.Radius.xxl)
+                .fill(Theme.Palette.surfaceSubtle)
         )
     }
     
     private func detailRow(label: String, value: String, icon: String) -> some View {
         HStack {
             Image(systemName: icon)
-                .font(.system(size: 14))
+                .font(Theme.Font.callout())
                 .foregroundColor(inkColorForCard(card))
                 .frame(width: 24)
             
             Text(label)
-                .font(.system(size: 14, weight: .medium))
+                .font(Theme.Font.callout(.medium))
                 .foregroundColor(.gray)
             
             Spacer()
             
             Text(value)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.white)
+                .font(Theme.Font.callout(.semibold))
+                .foregroundColor(Theme.Palette.textPrimary)
         }
     }
     
@@ -276,35 +266,35 @@ struct LorcanaCardDetailView: View {
     private func setSection(setName: String) -> some View {
         NavigationLink(destination: LorcanaSetDetailView(setName: setName)) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: Theme.Spacing.xxs) {
                     Text("SET")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(Theme.Font.tiny(.bold))
                         .tracking(2)
                         .foregroundColor(.gray)
                     
                     Text(setName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
+                        .font(Theme.Font.subhead(.semibold))
+                        .foregroundColor(Theme.Palette.textPrimary)
                 }
                 
                 Spacer()
                 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(Theme.Font.callout(.semibold))
                     .foregroundColor(inkColorForCard(card))
             }
-            .padding(16)
+            .padding(Theme.Spacing.lg)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: Theme.Radius.xxl)
                     .fill(
                         LinearGradient(
-                            colors: [inkColorForCard(card).opacity(0.15), Color.white.opacity(0.05)],
+                            colors: [inkColorForCard(card).opacity(0.15), Theme.Palette.surfaceSubtle],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: Theme.Radius.xxl)
                             .stroke(inkColorForCard(card).opacity(0.3), lineWidth: 1)
                     )
             )
@@ -315,45 +305,45 @@ struct LorcanaCardDetailView: View {
     // MARK: - Flavor Text
     
     private func flavorTextSection(flavorText: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
             Text("FLAVOR TEXT")
-                .font(.system(size: 10, weight: .bold))
+                .font(Theme.Font.tiny(.bold))
                 .tracking(2)
                 .foregroundColor(.gray)
             
             Text(flavorText)
-                .font(.system(size: 14, design: .serif))
+                .font(Theme.Font.callout(.regular, .serif))
                 .italic()
                 .foregroundColor(Color(red: 0.8, green: 0.75, blue: 0.9))
                 .lineSpacing(4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(Theme.Spacing.lg)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.03))
+            RoundedRectangle(cornerRadius: Theme.Radius.xxl)
+                .fill(Theme.Palette.surfaceUltraSubtle)
         )
     }
     
     // MARK: - Body Text
     
     private func bodyTextSection(bodyText: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
             Text("ABILITIES")
-                .font(.system(size: 10, weight: .bold))
+                .font(Theme.Font.tiny(.bold))
                 .tracking(2)
                 .foregroundColor(.gray)
             
             Text(bodyText)
-                .font(.system(size: 14))
-                .foregroundColor(.white)
+                .font(Theme.Font.callout())
+                .foregroundColor(Theme.Palette.textPrimary)
                 .lineSpacing(4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(Theme.Spacing.lg)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.05))
+            RoundedRectangle(cornerRadius: Theme.Radius.xxl)
+                .fill(Theme.Palette.surfaceSubtle)
         )
     }
     

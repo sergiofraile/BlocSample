@@ -18,7 +18,7 @@ struct LorcanaView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Magical gradient background
+                // Magical gradient background — Lorcana accent: purple/amethyst
                 LinearGradient(
                     colors: [
                         Color(red: 0.08, green: 0.06, blue: 0.14),
@@ -45,10 +45,7 @@ struct LorcanaView: View {
                 .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Search bar and fetch all button
                     searchBarSection
-                    
-                    // Content
                     contentView
                 }
             }
@@ -64,15 +61,14 @@ struct LorcanaView: View {
     // MARK: - Search Bar
     
     private var searchBarSection: some View {
-        HStack(spacing: 12) {
-            // Search field
+        HStack(spacing: Theme.Spacing.md) {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.gray)
-                    .font(.system(size: 16))
+                    .font(Theme.Font.subhead())
                 
                 TextField("Search cards...", text: $searchText)
-                    .foregroundColor(.white)
+                    .foregroundColor(Theme.Palette.textPrimary)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .onChange(of: searchText) { _, newValue in
@@ -91,13 +87,13 @@ struct LorcanaView: View {
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.vertical, Theme.Spacing.md)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white.opacity(0.08))
+                RoundedRectangle(cornerRadius: Theme.Radius.lg)
+                    .fill(Theme.Palette.surface)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: Theme.Radius.lg)
+                            .stroke(Theme.Palette.borderMedium, lineWidth: 1)
                     )
             )
             
@@ -108,8 +104,8 @@ struct LorcanaView: View {
                 lorcanaBloc.send(.fetchAllCards)
             } label: {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(Theme.Font.headline(.semibold))
+                    .foregroundColor(Theme.Palette.textPrimary)
                     .frame(width: 44, height: 44)
                     .background(
                         LinearGradient(
@@ -121,13 +117,13 @@ struct LorcanaView: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.lg))
                     .shadow(color: .purple.opacity(0.4), radius: 8, y: 4)
             }
         }
         .frame(maxWidth: 600)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, Theme.Spacing.lg)
+        .padding(.vertical, Theme.Spacing.md)
     }
     
     // MARK: - Content View
@@ -184,18 +180,18 @@ struct LorcanaView: View {
                     .shadow(color: .purple.opacity(0.5), radius: 20, y: 8)
                 
                 Image(systemName: "wand.and.stars")
-                    .font(.system(size: 40, weight: .medium))
-                    .foregroundColor(.white)
+                    .font(Theme.Font.display(40, weight: .medium))
+                    .foregroundColor(Theme.Palette.textPrimary)
             }
             
-            VStack(spacing: 12) {
+            VStack(spacing: Theme.Spacing.md) {
                 Text("DISNEY")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(Theme.Font.footnote(.bold))
                     .tracking(6)
                     .foregroundColor(.gray)
                 
                 Text("Lorcana")
-                    .font(.system(size: 32, weight: .bold, design: .serif))
+                    .font(Theme.Font.title2(.bold, .serif))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.white, Color(red: 0.8, green: 0.7, blue: 1.0)],
@@ -205,16 +201,16 @@ struct LorcanaView: View {
                     )
                 
                 Text("Card Collection")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(Theme.Font.subhead(.medium))
                     .foregroundColor(.gray)
             }
             
-            VStack(spacing: 8) {
+            VStack(spacing: Theme.Spacing.sm) {
                 Text("Search for cards or tap the sparkle")
-                    .font(.system(size: 14))
+                    .font(Theme.Font.callout())
                     .foregroundColor(.gray)
                 Text("button to browse all cards")
-                    .font(.system(size: 14))
+                    .font(Theme.Font.callout())
                     .foregroundColor(.gray)
             }
         }
@@ -224,7 +220,7 @@ struct LorcanaView: View {
     // MARK: - Loading View
     
     private var loadingView: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: Theme.Spacing.xl) {
             ZStack {
                 Circle()
                     .stroke(Color.purple.opacity(0.2), lineWidth: 4)
@@ -245,7 +241,7 @@ struct LorcanaView: View {
             }
             
             Text("Summoning cards...")
-                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .font(Theme.Font.subhead(.medium, .rounded))
                 .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -255,14 +251,13 @@ struct LorcanaView: View {
     
     private var cardsListView: some View {
         ScrollView {
-            LazyVStack(spacing: 12) {
+            LazyVStack(spacing: Theme.Spacing.md) {
                 ForEach(lorcanaBloc.state.cards) { card in
                     NavigationLink(destination: LorcanaCardDetailView(card: card)) {
                         cardRow(card: card)
                     }
                     .buttonStyle(.plain)
                     .onAppear {
-                        // Trigger load more when near the end
                         if card == lorcanaBloc.state.cards.last {
                             lorcanaBloc.send(.loadNextPage)
                         }
@@ -271,26 +266,26 @@ struct LorcanaView: View {
                 
                 // Loading more indicator
                 if lorcanaBloc.state.isLoadingMore {
-                    HStack(spacing: 12) {
+                    HStack(spacing: Theme.Spacing.md) {
                         ProgressView()
                             .tint(.purple)
                         Text("Loading more...")
-                            .font(.system(size: 14))
+                            .font(Theme.Font.callout())
                             .foregroundColor(.gray)
                     }
-                    .padding(.vertical, 20)
+                    .padding(.vertical, Theme.Spacing.xl)
                 }
                 
                 // End of list indicator
                 if !lorcanaBloc.state.hasMorePages && !lorcanaBloc.state.cards.isEmpty {
                     Text("You've seen all \(lorcanaBloc.state.cards.count) cards!")
-                        .font(.system(size: 14))
+                        .font(Theme.Font.callout())
                         .foregroundColor(.gray)
-                        .padding(.vertical, 20)
+                        .padding(.vertical, Theme.Spacing.xl)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.horizontal, Theme.Spacing.lg)
+            .padding(.vertical, Theme.Spacing.sm)
         }
     }
     
@@ -315,46 +310,42 @@ struct LorcanaView: View {
                 }
             }
             .frame(width: 60, height: 84)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.xs))
             
             // Card info
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
                 Text(card.name)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(Theme.Font.subhead(.semibold))
+                    .foregroundColor(Theme.Palette.textPrimary)
                     .lineLimit(1)
                 
-                HStack(spacing: 8) {
-                    // Cost badge
+                HStack(spacing: Theme.Spacing.sm) {
                     if let cost = card.cost {
-                        HStack(spacing: 4) {
+                        HStack(spacing: Theme.Spacing.xxs) {
                             Image(systemName: "drop.fill")
-                                .font(.system(size: 10))
+                                .font(Theme.Font.tiny())
                             Text("\(cost)")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(Theme.Font.footnote(.bold))
                         }
                         .foregroundColor(inkColorForCard(card))
                     }
                     
-                    // Type
                     if let type = card.type {
                         Text(type)
-                            .font(.system(size: 12))
+                            .font(Theme.Font.footnote())
                             .foregroundColor(.gray)
                     }
                     
-                    // Rarity
                     if let rarity = card.rarity {
                         Text("• \(rarity)")
-                            .font(.system(size: 12))
+                            .font(Theme.Font.footnote())
                             .foregroundColor(.gray)
                     }
                 }
                 
-                // Set name
                 if let setName = card.setName {
                     Text(setName)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(Theme.Font.caption(.medium))
                         .foregroundColor(Color(red: 0.6, green: 0.5, blue: 0.8))
                         .lineLimit(1)
                 }
@@ -363,7 +354,7 @@ struct LorcanaView: View {
             Spacer()
             
             // Stats column
-            VStack(alignment: .trailing, spacing: 4) {
+            VStack(alignment: .trailing, spacing: Theme.Spacing.xxs) {
                 if let strength = card.strength {
                     statBadge(icon: "bolt.fill", value: strength, color: .orange)
                 }
@@ -376,15 +367,15 @@ struct LorcanaView: View {
             }
             
             Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
+                .font(Theme.Font.callout(.semibold))
                 .foregroundColor(.gray.opacity(0.5))
         }
-        .padding(12)
+        .padding(Theme.Spacing.md)
         .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.05))
+            RoundedRectangle(cornerRadius: Theme.Radius.xl)
+                .fill(Theme.Palette.surfaceSubtle)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14)
+                    RoundedRectangle(cornerRadius: Theme.Radius.xl)
                         .stroke(
                             LinearGradient(
                                 colors: [inkColorForCard(card).opacity(0.3), Color.clear],
@@ -398,7 +389,7 @@ struct LorcanaView: View {
     }
     
     private func inkColorPlaceholder(card: LorcanaCard) -> some View {
-        RoundedRectangle(cornerRadius: 6)
+        RoundedRectangle(cornerRadius: Theme.Radius.xs)
             .fill(
                 LinearGradient(
                     colors: [inkColorForCard(card), inkColorForCard(card).opacity(0.6)],
@@ -409,11 +400,11 @@ struct LorcanaView: View {
     }
     
     private func statBadge(icon: String, value: Int, color: Color) -> some View {
-        HStack(spacing: 3) {
+        HStack(spacing: Theme.Spacing.xxxs) {
             Image(systemName: icon)
-                .font(.system(size: 9))
+                .font(Theme.Font.micro())
             Text("\(value)")
-                .font(.system(size: 11, weight: .bold))
+                .font(Theme.Font.caption(.bold))
         }
         .foregroundColor(color)
     }
@@ -433,29 +424,29 @@ struct LorcanaView: View {
     // MARK: - Error View
     
     private func errorView(error: LorcanaError) -> some View {
-        VStack(spacing: 20) {
+        VStack(spacing: Theme.Spacing.xl) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 44))
+                .font(Theme.Font.display(44))
                 .foregroundColor(.orange)
             
             Text("Something went wrong")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.white)
+                .font(Theme.Font.headline(.semibold))
+                .foregroundColor(Theme.Palette.textPrimary)
             
             Text(error.message)
-                .font(.system(size: 14))
+                .font(Theme.Font.callout())
                 .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+                .padding(.horizontal, Theme.Spacing.huge)
             
             Button {
                 lorcanaBloc.send(.fetchAllCards)
             } label: {
                 Text("Try Again")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+                    .font(Theme.Font.callout(.semibold))
+                    .foregroundColor(Theme.Palette.textPrimary)
+                    .padding(.horizontal, Theme.Spacing.xxl)
+                    .padding(.vertical, Theme.Spacing.md)
                     .background(Color.purple)
                     .clipShape(Capsule())
             }
@@ -466,17 +457,17 @@ struct LorcanaView: View {
     // MARK: - No Results View
     
     private var noResultsView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Theme.Spacing.lg) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 40))
+                .font(Theme.Font.display(40))
                 .foregroundColor(.gray)
             
             Text("No cards found")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.white)
+                .font(Theme.Font.headline(.semibold))
+                .foregroundColor(Theme.Palette.textPrimary)
             
             Text("Try a different search term")
-                .font(.system(size: 14))
+                .font(Theme.Font.callout())
                 .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -485,10 +476,8 @@ struct LorcanaView: View {
     // MARK: - Search Logic
     
     private func handleSearchChange(_ newValue: String) {
-        // Cancel any pending search
         searchTask?.cancel()
         
-        // Only search when we have 3+ characters
         guard newValue.count >= 3 else {
             if newValue.isEmpty {
                 lorcanaBloc.send(.clear)
@@ -496,12 +485,9 @@ struct LorcanaView: View {
             return
         }
         
-        // Debounce the search
         searchTask = Task {
-            try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
-            
+            try? await Task.sleep(nanoseconds: 300_000_000)
             guard !Task.isCancelled else { return }
-            
             lorcanaBloc.send(.search(query: newValue))
         }
     }

@@ -21,6 +21,8 @@ A Swift implementation of the [Bloc pattern](https://bloclibrary.dev/) for build
   * [Lifecycle Hooks](#lifecycle-hooks)
   * [Lifecycle Management (close)](#lifecycle-management-close)
   * [HydratedBloc — State Persistence](#hydratedbloc--state-persistence)
+  * [BlocListener](#bloclistener)
+  * [buildWhen / listenWhen](#buildwhen--listenwhen)
 * [Examples](#examples)
 * [Documentation](#documentation)
 * [Installation](#installation)
@@ -981,9 +983,203 @@ BlocRegistry.resetAllHydratedBlocs()
 
 ---
 
+---
+
+## BlocListener
+
+`BlocListener` is a view that subscribes to a Bloc's state stream and calls a `listener` closure for side effects — without ever causing its content to rebuild.
+
+Use it whenever a state change should trigger something outside the UI tree: navigation, a toast notification, a sound effect, an analytics event, or any other imperative action.
+
+### When to use BlocListener vs BlocBuilder
+
+| Need | Use |
+|------|-----|
+| Re-render UI when state changes | ``BlocBuilder`` (or direct `@Observable` access) |
+| Run a side effect when state changes | `BlocListener` |
+| Both side effects **and** UI rebuilds | Nest `BlocBuilder` inside `BlocListener`'s `content` |
+
+### Basic usage
+
+```swift
+// Show a toast whenever an item is added to the cart
+BlocListener(CartBloc.self) { state in
+    ToastManager.show("Item added! Cart total: \(state.itemCount)")
+} content: {
+    CartView()
+}
+```
+
+The `listener` closure receives the new state and runs on the main thread. The `content` view hierarchy is **never** re-executed by `BlocListener` itself.
+
+### Using `listenWhen`
+
+Add a `listenWhen` predicate to fire the listener only for specific transitions.
+It receives `(previous, current)` and must return `true` to invoke the listener:
+
+```swift
+// Navigate home only when login succeeds
+BlocListener(AuthBloc.self,
+    listenWhen: { prev, current in
+        !prev.isAuthenticated && current.isAuthenticated
+    }
+) { state in
+    navigator.push(.home)
+} content: {
+    LoginForm()
+}
+```
+
+When `listenWhen` is omitted the listener is called on **every** state change.
+
+### Side-effect pattern: overlay banner
+
+A common pattern is updating a local `@State` variable inside `listener` to show
+an overlay without rebuilding any of the Bloc-driven content:
+
+```swift
+@State private var milestone: String? = nil
+
+BlocListener(ScoreBloc.self,
+    listenWhen: { _, new in new > 0 && new % 5 == 0 }
+) { state in
+    milestone = "🎯 \(state) points!"
+    Task { @MainActor in
+        try? await Task.sleep(for: .seconds(2))
+        milestone = nil
+    }
+} content: {
+    ScoreContentView()
+}
+.overlay(alignment: .top) {
+    if let text = milestone {
+        MilestoneBanner(text: text)
+            .transition(.move(edge: .top).combined(with: .opacity))
+    }
+}
+```
+
+> **Demo:** Open the **Score Board** example. Tap **Score!** to increment. Every 5 points a milestone banner slides in from the top — fired by `BlocListener`. The banner appears without any rebuild of the score counter or tier badge.
+
+---
+
+## buildWhen / listenWhen
+
+Both `BlocBuilder` and `BlocListener` accept an optional predicate that gives you
+fine-grained control over when they respond to state changes.
+
+### `buildWhen` in BlocBuilder
+
+By default `BlocBuilder` passes the live Bloc to its content closure, and
+SwiftUI's `@Observable` system rebuilds the view whenever the state changes.
+
+When you add `buildWhen`, the content closure receives a **state snapshot**
+instead of the live Bloc. The snapshot is only updated — and the content only
+redrawn — when `buildWhen` returns `true`:
+
+```swift
+// Only rebuilds when the player crosses a tier boundary (every 10 pts).
+// The 9 intermediate point increments are intentionally ignored.
+BlocBuilder(ScoreBloc.self,
+    buildWhen: { old, new in old / 10 != new / 10 }
+) { state in
+    TierBadge(name: tierName(for: state))  // state is B.State, not B
+}
+```
+
+The content closure signature changes from `(B) -> Content` to
+`(B.State) -> Content` so that `@Observable` auto-tracking cannot bypass the
+filter.
+
+#### When to use `buildWhen`
+
+- A large state struct has many fields but a particular section only cares
+  about one.
+- You want a subsection to update at discrete thresholds, not on every emit.
+- For even stricter derived-value control (e.g. `\.isLoading`), see
+  `BlocSelector` (coming soon).
+
+### `listenWhen` in BlocListener
+
+`listenWhen` works the same way for side effects: the `listener` is called only
+when the predicate returns `true`. The internal cursor always advances to the
+latest emitted state, so missed states are not replayed:
+
+```swift
+BlocListener(AuthBloc.self,
+    listenWhen: { prev, current in
+        prev.isAuthenticated != current.isAuthenticated
+    }
+) { state in
+    state.isAuthenticated ? navigator.push(.home) : navigator.pop(to: .login)
+} content: {
+    AuthContent()
+}
+```
+
+### Combining both predicates
+
+Nest `BlocBuilder` inside `BlocListener` to apply independent filters to each
+layer:
+
+```swift
+// Side effect fires only on error transitions
+BlocListener(DataBloc.self,
+    listenWhen: { prev, curr in prev.error == nil && curr.error != nil }
+) { state in
+    ToastManager.showError(state.error!.localizedDescription)
+} content: {
+    // UI only rebuilds when loading status changes
+    BlocBuilder(DataBloc.self,
+        buildWhen: { old, new in old.isLoading != new.isLoading }
+    ) { state in
+        state.isLoading ? ProgressView() : DataList()
+    }
+}
+```
+
+> **Demo:** Open the **Score Board** example. Use Xcode's Debug → View Hierarchy or add a print statement inside the tier `BlocBuilder` content closure to confirm it only fires at 10, 20, and 30 points while the score counter updates on every tap.
+
+---
+
 ## Examples
 
 The project includes four example implementations that demonstrate different complexity levels:
+
+### 🎮 Score Board Example
+
+Demonstrates `BlocListener` and `buildWhen` in `BlocBuilder`:
+
+| Aspect | Details |
+|--------|---------|
+| **State** | `Int` (current score) |
+| **Events** | `addPoint`, `reset` |
+| **Patterns** | `BlocListener` for milestone toasts, `BlocBuilder(buildWhen:)` for tier badge |
+
+**Location:** `Examples/Score/`
+
+```swift
+// BlocListener — fires only at every 5-point milestone (side effect)
+BlocListener(ScoreBloc.self,
+    listenWhen: { _, new in new > 0 && new % 5 == 0 }
+) { state in
+    showMilestoneBanner("🎯 \(state) points!")
+} content: {
+    // BlocBuilder with buildWhen — only redraws when the tier changes
+    BlocBuilder(ScoreBloc.self,
+        buildWhen: { old, new in old / 10 != new / 10 }
+    ) { state in
+        TierBadge(tier: tierName(for: state))
+    }
+}
+```
+
+**Key Learnings:**
+- `BlocListener` side effects leave the content untouched
+- `buildWhen` with a state snapshot prevents mid-tier rebuilds
+- All three reactive layers (`@Observable` direct access, `BlocListener`, `BlocBuilder`) coexist in one screen
+
+---
 
 ### 🔢 Counter Example
 

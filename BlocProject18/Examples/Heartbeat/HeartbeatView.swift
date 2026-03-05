@@ -32,7 +32,7 @@ struct HeartbeatView: View {
                 }
                 .frame(width: min(380, geo.size.width * 0.5))
 
-                Divider().background(Color.white.opacity(0.08))
+                Divider().background(Theme.Palette.divider)
 
                 LifecycleLogPanel(bloc: bloc)
                     .frame(maxWidth: .infinity)
@@ -54,14 +54,11 @@ struct HeartbeatView: View {
         .navigationTitle("Heartbeat — Scoped Lifecycle")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            // Only start if the bloc is fresh (not already running from a previous appear).
             if !bloc.state.isRunning && !bloc.isClosed {
                 bloc.send(.start)
             }
         }
         .onDisappear {
-            // Close the Bloc when the screen is dismissed. This is the key
-            // pattern for scoped Blocs: tie close() to the view's disappearance.
             bloc.close()
         }
     }
@@ -73,6 +70,9 @@ private struct MonitorPanel: View {
     let bloc: HeartbeatBloc
     let onNewSession: () -> Void
 
+    // Accent colour for this screen: green (active) / orange (closed)
+    private var accentColor: Color { bloc.isClosed ? .orange : Color(red: 0.3, green: 0.85, blue: 0.6) }
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
@@ -81,60 +81,60 @@ private struct MonitorPanel: View {
             PulseRing(tickCount: bloc.state.tickCount, isClosed: bloc.isClosed)
                 .frame(width: 200, height: 200)
 
-            Spacer().frame(height: 32)
+            Spacer().frame(height: Theme.Spacing.xxxl)
 
             // Session stats
-            VStack(spacing: 8) {
+            VStack(spacing: Theme.Spacing.sm) {
                 Text(bloc.isClosed ? "CLOSED" : bloc.state.formattedDuration)
-                    .font(.system(size: 48, weight: .thin, design: .monospaced))
-                    .foregroundColor(bloc.isClosed ? .orange : .white)
+                    .font(Theme.Font.display(48, weight: .thin, design: .monospaced))
+                    .foregroundColor(bloc.isClosed ? .orange : Theme.Palette.textPrimary)
                     .animation(.easeInOut(duration: 0.3), value: bloc.isClosed)
                     .contentTransition(.numericText())
 
                 Text(bloc.isClosed
                      ? "Navigate away to close automatically"
                      : "\(bloc.state.tickCount) tick\(bloc.state.tickCount == 1 ? "" : "s")")
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundColor(.white.opacity(0.4))
+                    .font(Theme.Font.body(.medium, .rounded))
+                    .foregroundColor(Theme.Palette.textQuaternary)
             }
 
-            Spacer().frame(height: 40)
+            Spacer().frame(height: Theme.Spacing.huge)
 
             // Explanation card
             VStack(alignment: .leading, spacing: 10) {
                 Label("Scoped Bloc Pattern", systemImage: "info.circle")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white.opacity(0.6))
+                    .font(Theme.Font.footnote(.semibold, .rounded))
+                    .foregroundColor(Theme.Palette.textTertiary)
 
                 Text("This Bloc is **not** in BlocProvider. It is owned by the view via `@State` — created on appear, closed on disappear. Navigate away to trigger `close()` automatically, or tap New Session below.")
-                    .font(.system(size: 11, weight: .regular, design: .rounded))
-                    .foregroundColor(.white.opacity(0.4))
+                    .font(Theme.Font.caption(.regular, .rounded))
+                    .foregroundColor(Theme.Palette.textQuaternary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(14)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(0.04))
+                RoundedRectangle(cornerRadius: Theme.Radius.lg, style: .continuous)
+                    .fill(Theme.Palette.surfaceSubtle)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: Theme.Radius.lg, style: .continuous)
+                            .stroke(Theme.Palette.border, lineWidth: 1)
                     )
             )
             .padding(.horizontal, 28)
 
-            Spacer().frame(height: 24)
+            Spacer().frame(height: Theme.Spacing.xxl)
 
             // New Session button
             Button(action: onNewSession) {
-                HStack(spacing: 8) {
+                HStack(spacing: Theme.Spacing.sm) {
                     Image(systemName: "arrow.clockwise.circle.fill")
                     Text("New Session")
                         .fontWeight(.semibold)
                 }
-                .font(.system(size: 14, design: .rounded))
-                .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
+                .font(Theme.Font.callout(.regular, .rounded))
+                .foregroundColor(Theme.Palette.textPrimary)
+                .padding(.horizontal, Theme.Spacing.xxl)
+                .padding(.vertical, Theme.Spacing.md)
                 .background(
                     Capsule()
                         .fill(
@@ -154,7 +154,7 @@ private struct MonitorPanel: View {
 
             Spacer()
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, Theme.Spacing.xl)
     }
 }
 
@@ -164,7 +164,6 @@ private struct PulseRing: View {
     let tickCount: Int
     let isClosed: Bool
 
-    /// Each tick increments this, driving the ripple animation.
     @State private var pulse = false
 
     var body: some View {
@@ -209,7 +208,7 @@ private struct PulseRing: View {
 
             // Icon
             Image(systemName: isClosed ? "xmark.circle" : "waveform.path.ecg")
-                .font(.system(size: 32, weight: .thin))
+                .font(Theme.Font.display(32, weight: .thin))
                 .foregroundColor(isClosed ? .orange.opacity(0.7) : Color(red: 0.3, green: 0.9, blue: 0.6).opacity(0.8))
                 .animation(.easeInOut(duration: 0.3), value: isClosed)
         }
@@ -232,29 +231,29 @@ private struct LifecycleLogPanel: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: Theme.Spacing.xxs) {
+                    HStack(spacing: Theme.Spacing.xs) {
                         Text("Lifecycle Log")
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white)
+                            .font(Theme.Font.callout(.semibold, .rounded))
+                            .foregroundColor(Theme.Palette.textPrimary)
 
-                        HStack(spacing: 4) {
+                        HStack(spacing: Theme.Spacing.xxs) {
                             Circle()
                                 .fill(bloc.isClosed ? Color.orange : Color.green)
                                 .frame(width: 6, height: 6)
                             Text(bloc.isClosed ? "CLOSED" : "ACTIVE")
-                                .font(.system(size: 9, weight: .bold, design: .rounded))
+                                .font(Theme.Font.micro(.bold, .rounded))
                                 .foregroundColor(bloc.isClosed ? .orange : .green)
                         }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
+                        .padding(.horizontal, Theme.Spacing.xs)
+                        .padding(.vertical, Theme.Spacing.xxxs)
                         .background(
                             Capsule().fill((bloc.isClosed ? Color.orange : Color.green).opacity(0.12))
                         )
                     }
                     Text("\(log.entries.count) events")
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .foregroundColor(.white.opacity(0.4))
+                        .font(Theme.Font.caption(.medium, .rounded))
+                        .foregroundColor(Theme.Palette.textDisabled)
                 }
 
                 Spacer()
@@ -263,16 +262,16 @@ private struct LifecycleLogPanel: View {
                     withAnimation { log.clear() }
                 } label: {
                     Image(systemName: "trash")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.4))
+                        .font(Theme.Font.body(.medium))
+                        .foregroundColor(Theme.Palette.textDisabled)
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color.white.opacity(0.03))
+            .padding(.horizontal, Theme.Spacing.lg)
+            .padding(.vertical, Theme.Spacing.md)
+            .background(Theme.Palette.surfaceUltraSubtle)
 
-            Divider().background(Color.white.opacity(0.08))
+            Divider().background(Theme.Palette.divider)
 
             if log.entries.isEmpty {
                 emptyState
@@ -285,7 +284,7 @@ private struct LifecycleLogPanel: View {
                                     .id(entry.id)
                             }
                         }
-                        .padding(.vertical, 4)
+                        .padding(.vertical, Theme.Spacing.xxs)
                     }
                     .onChange(of: log.entries.count) { _, _ in
                         if let last = log.entries.last {
@@ -300,14 +299,14 @@ private struct LifecycleLogPanel: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Theme.Spacing.md) {
             Spacer()
             Image(systemName: "waveform.path.ecg")
-                .font(.system(size: 36, weight: .thin))
-                .foregroundColor(.white.opacity(0.15))
+                .font(Theme.Font.display(36, weight: .thin))
+                .foregroundColor(Theme.Palette.textHint)
             Text("Starting…")
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundColor(.white.opacity(0.25))
+                .font(Theme.Font.callout(.medium, .rounded))
+                .foregroundColor(Theme.Palette.textDisabled)
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -321,51 +320,50 @@ private struct LogRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            HStack(spacing: 4) {
+            HStack(spacing: Theme.Spacing.xxs) {
                 Image(systemName: entry.kind.symbol)
-                    .font(.system(size: 9, weight: .bold))
+                    .font(Theme.Font.micro(.bold))
                 Text(entry.kind.label)
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .font(Theme.Font.micro(.bold, .monospaced))
             }
             .foregroundColor(entry.kind.color)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(RoundedRectangle(cornerRadius: 4).fill(entry.kind.color.opacity(0.12)))
+            .padding(.horizontal, Theme.Spacing.xs)
+            .padding(.vertical, Theme.Spacing.xxxs)
+            .background(RoundedRectangle(cornerRadius: Theme.Radius.xs).fill(entry.kind.color.opacity(0.12)))
             .frame(width: 90, alignment: .leading)
 
             Text(entry.message)
-                .font(.system(size: 12, weight: .regular, design: .monospaced))
-                .foregroundColor(.white.opacity(0.8))
+                .font(Theme.Font.footnote(.regular, .monospaced))
+                .foregroundColor(Theme.Palette.textPrimary.opacity(0.8))
                 .fixedSize(horizontal: false, vertical: true)
 
             Spacer()
 
             Text(entry.timestamp.logTimestamp)
-                .font(.system(size: 10, weight: .regular, design: .monospaced))
-                .foregroundColor(.white.opacity(0.2))
+                .font(Theme.Font.tiny(.regular, .monospaced))
+                .foregroundColor(Theme.Palette.textDisabled)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, Theme.Spacing.md)
+        .padding(.vertical, Theme.Spacing.xs)
         .background(
             entry.kind == .close ? Color.orange.opacity(0.06) : Color.clear
         )
         .overlay(alignment: .bottom) {
-            Divider().background(Color.white.opacity(0.04))
+            Divider().background(Theme.Palette.surfaceSubtle)
         }
     }
 }
 
 // MARK: - Feature Disclaimer Banner
 
-/// A non-intrusive banner that contextualises what feature this screen demonstrates.
 private struct LifecycleFeatureBanner: View {
     @State private var expanded = true
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: Theme.Spacing.md) {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 18, weight: .medium))
+                    .font(Theme.Font.headline(.medium))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [Color(red: 0.2, green: 0.85, blue: 0.6), Color(red: 0.1, green: 0.65, blue: 0.5)],
@@ -374,20 +372,20 @@ private struct LifecycleFeatureBanner: View {
                     )
 
                 if expanded {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: Theme.Spacing.xxs) {
                         Text("Demonstrates: close() — Lifecycle Management")
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white.opacity(0.9))
+                            .font(Theme.Font.footnote(.semibold, .rounded))
+                            .foregroundColor(Theme.Palette.textPrimary.opacity(0.9))
 
                         Text("This Bloc is **not** in BlocProvider. It is scoped to this screen via `@State`. Navigate away and the Bloc is closed automatically via `onDisappear { bloc.close() }`. Return to see a fresh Bloc start from zero. Tap **New Session** to close and recreate the Bloc inline.")
-                            .font(.system(size: 11, weight: .regular, design: .rounded))
-                            .foregroundColor(.white.opacity(0.55))
+                            .font(Theme.Font.caption(.regular, .rounded))
+                            .foregroundColor(Theme.Palette.textTertiary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 } else {
                     Text("close() — Lifecycle Management")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.6))
+                        .font(Theme.Font.footnote(.semibold, .rounded))
+                        .foregroundColor(Theme.Palette.textTertiary)
                     Spacer()
                 }
 
@@ -397,15 +395,15 @@ private struct LifecycleFeatureBanner: View {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { expanded.toggle() }
                 } label: {
                     Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.35))
+                        .font(Theme.Font.caption(.semibold))
+                        .foregroundColor(Theme.Palette.textQuaternary)
                 }
                 .buttonStyle(.plain)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, Theme.Spacing.lg)
+            .padding(.vertical, Theme.Spacing.md)
 
-            Divider().background(Color.white.opacity(0.08))
+            Divider().background(Theme.Palette.divider)
         }
         .background(
             Color(red: 0.1, green: 0.2, blue: 0.15).opacity(0.85)

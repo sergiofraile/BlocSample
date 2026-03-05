@@ -14,7 +14,7 @@ struct FormulaOneView: View {
     
     var body: some View {
         ZStack {
-            // Dark racing-inspired background
+            // Dark racing-inspired background — F1 accent: red
             Color(red: 0.08, green: 0.08, blue: 0.1)
                 .ignoresSafeArea()
             
@@ -30,11 +30,11 @@ struct FormulaOneView: View {
                         path.closeSubpath()
                     }
                 }
-                .fill(Color.white.opacity(0.02))
+                .fill(Theme.Palette.surfaceUltraSubtle)
             }
             .ignoresSafeArea()
             
-            VStack(spacing: 20) {
+            VStack(spacing: Theme.Spacing.xl) {
                 switch formulaOneBloc.state {
                 case .initial:
                     initialStateView
@@ -56,7 +56,7 @@ struct FormulaOneView: View {
     
     // MARK: - Initial State
     private var initialStateView: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: Theme.Spacing.xxxl) {
             // F1 Logo/Icon
             ZStack {
                 Circle()
@@ -71,33 +71,33 @@ struct FormulaOneView: View {
                     .shadow(color: .red.opacity(0.4), radius: 20, y: 10)
                 
                 Text("F1")
-                    .font(.system(size: 44, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
+                    .font(Theme.Font.display(44, weight: .black, design: .rounded))
+                    .foregroundColor(Theme.Palette.textPrimary)
             }
             
-            VStack(spacing: 12) {
+            VStack(spacing: Theme.Spacing.md) {
                 Text("FORMULA 1")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(Theme.Font.callout(.bold))
                     .tracking(8)
                     .foregroundColor(.gray)
                 
                 Text("Driver's Championship")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .font(Theme.Font.title(.bold, .rounded))
+                    .foregroundColor(Theme.Palette.textPrimary)
             }
             
             Button(action: {
                 formulaOneBloc.send(.loadChampionship)
             }) {
-                HStack(spacing: 12) {
+                HStack(spacing: Theme.Spacing.md) {
                     Image(systemName: "flag.checkered")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(Theme.Font.headline(.semibold))
                     Text("Load Championship")
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .font(Theme.Font.subhead(.semibold, .rounded))
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, 32)
-                .padding(.vertical, 16)
+                .foregroundColor(Theme.Palette.textPrimary)
+                .padding(.horizontal, Theme.Spacing.xxxl)
+                .padding(.vertical, Theme.Spacing.lg)
                 .background(
                     LinearGradient(
                         colors: [Color(red: 0.9, green: 0.1, blue: 0.1), Color(red: 0.75, green: 0.05, blue: 0.05)],
@@ -115,7 +115,7 @@ struct FormulaOneView: View {
     
     // MARK: - Loading State
     private var loadingView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: Theme.Spacing.xxl) {
             ZStack {
                 Circle()
                     .stroke(Color.gray.opacity(0.3), lineWidth: 4)
@@ -136,7 +136,7 @@ struct FormulaOneView: View {
             }
             
             Text("Loading Championship...")
-                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .font(Theme.Font.subhead(.medium, .rounded))
                 .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -146,13 +146,13 @@ struct FormulaOneView: View {
     @ViewBuilder
     private func driversListView(drivers: [DriverChampionship]) -> some View {
         ScrollView {
-            LazyVStack(spacing: 12) {
+            LazyVStack(spacing: Theme.Spacing.md) {
                 ForEach(Array(drivers.enumerated()), id: \.element.id) { index, driver in
                     driverCard(driver: driver, position: index + 1)
                 }
             }
             .padding(.horizontal)
-            .padding(.vertical, 8)
+            .padding(.vertical, Theme.Spacing.sm)
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -160,7 +160,7 @@ struct FormulaOneView: View {
                     formulaOneBloc.send(.clear)
                 }) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
+                        .font(Theme.Font.display(20))
                         .foregroundColor(.gray)
                 }
             }
@@ -169,34 +169,34 @@ struct FormulaOneView: View {
     
     // MARK: - Driver Card
     private func driverCard(driver: DriverChampionship, position: Int) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: Theme.Spacing.lg) {
             // Position badge
             ZStack {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: Theme.Radius.sm)
                     .fill(positionColor(position))
                     .frame(width: 44, height: 44)
                 
                 Text("\(position)")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .font(Theme.Font.headline(.bold, .rounded))
+                    .foregroundColor(Theme.Palette.textPrimary)
             }
             
             // Driver info
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.xxs) {
                 Text("\(driver.driver.name) \(driver.driver.surname)")
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white)
+                    .font(Theme.Font.subhead(.semibold, .rounded))
+                    .foregroundColor(Theme.Palette.textPrimary)
                 
-                HStack(spacing: 8) {
+                HStack(spacing: Theme.Spacing.sm) {
                     Text("#\(driver.driver.number)")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .font(Theme.Font.footnote(.bold, .monospaced))
                         .foregroundColor(.cyan)
                     
                     Text("•")
                         .foregroundColor(.gray.opacity(0.5))
                     
                     Text(driver.team.teamName)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(Theme.Font.footnote(.medium))
                         .foregroundColor(.gray)
                 }
             }
@@ -204,22 +204,22 @@ struct FormulaOneView: View {
             Spacer()
             
             // Points
-            VStack(alignment: .trailing, spacing: 2) {
+            VStack(alignment: .trailing, spacing: Theme.Spacing.xxs) {
                 Text("\(driver.points)")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    .font(Theme.Font.title3(.bold, .rounded))
+                    .foregroundColor(Theme.Palette.textPrimary)
                 Text("PTS")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(Theme.Font.tiny(.semibold))
                     .foregroundColor(.gray)
             }
         }
-        .padding(16)
+        .padding(Theme.Spacing.lg)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white.opacity(0.05))
+            RoundedRectangle(cornerRadius: Theme.Radius.xxl)
+                .fill(Theme.Palette.surfaceSubtle)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: Theme.Radius.xxl)
+                        .stroke(Theme.Palette.border, lineWidth: 1)
                 )
         )
     }
@@ -239,29 +239,29 @@ struct FormulaOneView: View {
     
     // MARK: - Error State
     private func errorView(error: Error) -> some View {
-        VStack(spacing: 20) {
+        VStack(spacing: Theme.Spacing.xl) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 48))
+                .font(Theme.Font.display(48))
                 .foregroundColor(.orange)
             
             Text("Something went wrong")
-                .font(.system(size: 20, weight: .semibold, design: .rounded))
-                .foregroundColor(.white)
+                .font(Theme.Font.display(20, weight: .semibold, design: .rounded))
+                .foregroundColor(Theme.Palette.textPrimary)
             
             Text(error.localizedDescription)
-                .font(.system(size: 14))
+                .font(Theme.Font.callout())
                 .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+                .padding(.horizontal, Theme.Spacing.huge)
             
             Button(action: {
                 formulaOneBloc.send(.loadChampionship)
             }) {
                 Text("Try Again")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+                    .font(Theme.Font.callout(.semibold))
+                    .foregroundColor(Theme.Palette.textPrimary)
+                    .padding(.horizontal, Theme.Spacing.xxl)
+                    .padding(.vertical, Theme.Spacing.md)
                     .background(Color.red)
                     .clipShape(Capsule())
             }

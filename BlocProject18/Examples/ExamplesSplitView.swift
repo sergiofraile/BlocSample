@@ -40,7 +40,7 @@ struct ExamplesSplitView: View {
                     
                     // Navigation Items
                     ScrollView {
-                        LazyVStack(spacing: 8) {
+                        LazyVStack(spacing: Theme.Spacing.sm) {
                             ForEach(NavigationOptions.mainPages) { page in
                                 NavigationLink(value: page) {
                                     ExampleRowView(
@@ -56,8 +56,8 @@ struct ExamplesSplitView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.top, 8)
+                        .padding(.horizontal, Theme.Spacing.md)
+                        .padding(.top, Theme.Spacing.sm)
                     }
                     
                     Spacer()
@@ -112,10 +112,10 @@ struct ExamplesSplitView: View {
     }
     
     private var headerView: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: Theme.Spacing.xs) {
             HStack(spacing: 10) {
                 Image(systemName: "cube.transparent.fill")
-                    .font(.system(size: 28, weight: .medium))
+                    .font(Theme.Font.title(.medium))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.cyan, .blue, .purple],
@@ -126,10 +126,10 @@ struct ExamplesSplitView: View {
                     .shadow(color: .cyan.opacity(0.5), radius: 8, x: 0, y: 2)
                 
                 Text("Bloc Examples")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .font(Theme.Font.headline(.bold, .rounded))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.white, .white.opacity(0.8)],
+                            colors: [Theme.Palette.textPrimary, Theme.Palette.textPrimary.opacity(0.8)],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -137,17 +137,17 @@ struct ExamplesSplitView: View {
             }
             
             Text("State Management Patterns")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(Theme.Font.caption(.medium, .rounded))
                 .foregroundColor(.secondary)
                 .tracking(1.5)
                 .textCase(.uppercase)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .padding(.vertical, Theme.Spacing.xxl)
         .background(
             LinearGradient(
                 colors: [
-                    Color.white.opacity(0.03),
+                    Theme.Palette.surfaceUltraSubtle,
                     Color.clear
                 ],
                 startPoint: .top,
@@ -157,18 +157,18 @@ struct ExamplesSplitView: View {
     }
     
     private var footerView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Theme.Spacing.sm) {
             Divider()
-                .background(Color.white.opacity(0.1))
+                .background(Theme.Palette.divider)
             
             #if DEBUG
             // Pulse Console Button
             Button {
                 isConsoleViewPresenting = true
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: Theme.Spacing.sm) {
                     Image(systemName: "stethoscope")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(Theme.Font.callout(.semibold))
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [.pink, .purple],
@@ -178,17 +178,17 @@ struct ExamplesSplitView: View {
                         )
                     
                     Text("Pulse Console")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.9))
+                        .font(Theme.Font.body(.semibold, .rounded))
+                        .foregroundColor(Theme.Palette.textPrimary.opacity(0.9))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
                 .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color.white.opacity(0.08))
+                    RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
+                        .fill(Theme.Palette.surface)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
                         .stroke(
                             LinearGradient(
                                 colors: [.pink.opacity(0.4), .purple.opacity(0.2)],
@@ -200,44 +200,42 @@ struct ExamplesSplitView: View {
                 )
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 12)
-            .padding(.top, 4)
+            .padding(.horizontal, Theme.Spacing.md)
+            .padding(.top, Theme.Spacing.xxs)
             #endif
             
             // Clear All Hydrated Storage
             Button {
                 showClearConfirm = true
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: Theme.Spacing.sm) {
                     Image(systemName: clearFeedback ? "checkmark.circle.fill" : "externaldrive.badge.minus")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(Theme.Font.body(.semibold))
                         .foregroundColor(clearFeedback ? .green : .cyan.opacity(0.8))
 
                     Text(clearFeedback ? "Storage cleared!" : "Clear Hydrated Storage")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundColor(clearFeedback ? .green : .white.opacity(0.7))
+                        .font(Theme.Font.footnote(.semibold, .rounded))
+                        .foregroundColor(clearFeedback ? .green : Theme.Palette.textSecondary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 9)
                 .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
                         .fill(clearFeedback ? Color.green.opacity(0.1) : Color.cyan.opacity(0.07))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
                         .stroke(clearFeedback ? Color.green.opacity(0.4) : Color.cyan.opacity(0.2), lineWidth: 1)
                 )
             }
             .buttonStyle(.plain)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, Theme.Spacing.md)
             .confirmationDialog(
                 "Clear all hydrated state?",
                 isPresented: $showClearConfirm,
                 titleVisibility: .visible
             ) {
                 Button("Clear & Reset All", role: .destructive) {
-                    // Reset every registered HydratedBloc to its initial state.
-                    // Using AnyHydratedBloc avoids importing concrete types here.
                     BlocRegistry.resetAllHydratedBlocs()
                     withAnimation { clearFeedback = true }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -249,9 +247,9 @@ struct ExamplesSplitView: View {
                 Text("This calls resetToInitialState() on every HydratedBloc — storage is cleared and each Bloc immediately emits its initial state. Rehydration is creation-time only: this is the equivalent of starting the next session clean, applied right now.")
             }
 
-            HStack(spacing: 6) {
+            HStack(spacing: Theme.Spacing.xs) {
                 Image(systemName: "swift")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(Theme.Font.footnote(.semibold))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.orange, .red],
@@ -261,10 +259,10 @@ struct ExamplesSplitView: View {
                     )
                 
                 Text("Built with Swift")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .font(Theme.Font.caption(.medium, .rounded))
                     .foregroundColor(.secondary)
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, Theme.Spacing.md)
         }
     }
 }
@@ -277,9 +275,8 @@ struct ExampleRowView: View {
     
     var body: some View {
         HStack(spacing: 14) {
-            // Icon with gradient background
             ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: Theme.Radius.md, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: page.gradientColors,
@@ -296,41 +293,41 @@ struct ExampleRowView: View {
                     )
                 
                 Image(systemName: page.symbolName)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(Theme.Font.subhead(.semibold))
+                    .foregroundColor(Theme.Palette.textPrimary)
             }
             
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.xxxs) {
                 Text(page.name)
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white)
+                    .font(Theme.Font.callout(.semibold, .rounded))
+                    .foregroundColor(Theme.Palette.textPrimary)
                 
                 Text(page.subtitle)
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundColor(.white.opacity(0.6))
+                    .font(Theme.Font.caption(.medium, .rounded))
+                    .foregroundColor(Theme.Palette.textTertiary)
                     .lineLimit(1)
             }
             
             Spacer()
             
             Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.white.opacity(0.6))
+                .font(Theme.Font.footnote(.semibold))
+                .foregroundColor(Theme.Palette.textTertiary)
                 .opacity(isHovered ? 1 : 0.5)
                 .offset(x: isHovered ? 2 : 0)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, Theme.Spacing.md)
         .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.Radius.lg, style: .continuous)
                 .fill(
                     isHovered
-                        ? Color.white.opacity(0.08)
-                        : Color.white.opacity(0.03)
+                        ? Theme.Palette.surface
+                        : Theme.Palette.surfaceUltraSubtle
                 )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.Radius.lg, style: .continuous)
                 .stroke(
                     LinearGradient(
                         colors: isHovered
@@ -370,12 +367,12 @@ struct WelcomeDetailView: View {
                 }
             }
             
-            VStack(spacing: 24) {
+            VStack(spacing: Theme.Spacing.xxl) {
                 // Floating cubes animation
                 ZStack {
                     ForEach(0..<3) { index in
                         Image(systemName: "cube.fill")
-                            .font(.system(size: 40 - CGFloat(index * 8)))
+                            .font(Theme.Font.display(40 - CGFloat(index * 8)))
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [.cyan.opacity(0.8 - Double(index) * 0.2), .purple.opacity(0.6 - Double(index) * 0.15)],
@@ -389,31 +386,31 @@ struct WelcomeDetailView: View {
                 }
                 .shadow(color: .cyan.opacity(0.3), radius: 20, x: 0, y: 10)
                 
-                VStack(spacing: 12) {
+                VStack(spacing: Theme.Spacing.md) {
                     Text("Welcome to Bloc Examples")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(Theme.Font.title(.bold, .rounded))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [.white, .white.opacity(0.8)],
+                                colors: [Theme.Palette.textPrimary, Theme.Palette.textPrimary.opacity(0.8)],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
                         )
                     
                     Text("Select an example from the sidebar to explore different state management patterns")
-                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .font(Theme.Font.display(15, weight: .medium, design: .rounded))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: 400)
                 }
                 
                 // Feature pills
-                HStack(spacing: 12) {
+                HStack(spacing: Theme.Spacing.md) {
                     FeaturePill(icon: "bolt.fill", text: "Reactive", color: .yellow)
                     FeaturePill(icon: "arrow.triangle.2.circlepath", text: "Predictable", color: .cyan)
                     FeaturePill(icon: "checkmark.seal.fill", text: "Testable", color: .green)
                 }
-                .padding(.top, 8)
+                .padding(.top, Theme.Spacing.sm)
             }
         }
     }
@@ -425,17 +422,17 @@ struct FeaturePill: View {
     let color: Color
     
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Theme.Spacing.xs) {
             Image(systemName: icon)
-                .font(.system(size: 12, weight: .bold))
+                .font(Theme.Font.footnote(.bold))
                 .foregroundColor(color)
             
             Text(text)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundColor(.white.opacity(0.9))
+                .font(Theme.Font.footnote(.semibold, .rounded))
+                .foregroundColor(Theme.Palette.textPrimary.opacity(0.9))
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.vertical, Theme.Spacing.sm)
         .background(
             Capsule()
                 .fill(color.opacity(0.15))

@@ -22,7 +22,7 @@ struct LorcanaSetDetailView: View {
     
     var body: some View {
         ZStack {
-            // Dark magical background
+            // Dark magical background — purple accent
             LinearGradient(
                 colors: [
                     Color(red: 0.06, green: 0.08, blue: 0.14),
@@ -34,7 +34,7 @@ struct LorcanaSetDetailView: View {
             )
             .ignoresSafeArea()
             
-            // Subtle pattern
+            // Subtle orb pattern
             GeometryReader { geometry in
                 ForEach(0..<20, id: \.self) { i in
                     Circle()
@@ -50,10 +50,8 @@ struct LorcanaSetDetailView: View {
             .ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Set header
                 setHeader
                 
-                // Content
                 if isLoading {
                     loadingView
                 } else if let error = error {
@@ -72,7 +70,6 @@ struct LorcanaSetDetailView: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .tint(.white)
         .task {
-            // Only load once when view first appears
             guard !hasLoaded else { return }
             await loadSetCards()
         }
@@ -81,7 +78,7 @@ struct LorcanaSetDetailView: View {
     // MARK: - Set Header
     
     private var setHeader: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Theme.Spacing.md) {
             // Set icon
             ZStack {
                 Circle()
@@ -96,7 +93,7 @@ struct LorcanaSetDetailView: View {
                     .frame(width: 80, height: 80)
                 
                 Image(systemName: "sparkles.rectangle.stack.fill")
-                    .font(.system(size: 32))
+                    .font(Theme.Font.display(32))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [Color.purple, Color.pink],
@@ -106,25 +103,25 @@ struct LorcanaSetDetailView: View {
                     )
             }
             
-            VStack(spacing: 6) {
+            VStack(spacing: Theme.Spacing.xs) {
                 Text("SET COLLECTION")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(Theme.Font.tiny(.bold))
                     .tracking(3)
                     .foregroundColor(.gray)
                 
                 Text(setName)
-                    .font(.system(size: 22, weight: .bold, design: .serif))
-                    .foregroundColor(.white)
+                    .font(Theme.Font.title3(.bold, .serif))
+                    .foregroundColor(Theme.Palette.textPrimary)
                     .multilineTextAlignment(.center)
                 
                 if !setCards.isEmpty {
                     Text("\(setCards.count) cards")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(Theme.Font.callout(.medium))
                         .foregroundColor(.purple.opacity(0.8))
                 }
             }
         }
-        .padding(.vertical, 24)
+        .padding(.vertical, Theme.Spacing.xxl)
         .frame(maxWidth: .infinity)
         .background(
             LinearGradient(
@@ -140,10 +137,10 @@ struct LorcanaSetDetailView: View {
     private var cardsGrid: some View {
         ScrollView {
             LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12)
-            ], spacing: 12) {
+                GridItem(.flexible(), spacing: Theme.Spacing.md),
+                GridItem(.flexible(), spacing: Theme.Spacing.md),
+                GridItem(.flexible(), spacing: Theme.Spacing.md)
+            ], spacing: Theme.Spacing.md) {
                 ForEach(setCards) { card in
                     NavigationLink(destination: LorcanaCardDetailView(card: card)) {
                         cardGridItem(card: card)
@@ -151,13 +148,13 @@ struct LorcanaSetDetailView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, Theme.Spacing.lg)
+            .padding(.vertical, Theme.Spacing.md)
         }
     }
     
     private func cardGridItem(card: LorcanaCard) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Theme.Spacing.sm) {
             // Card image
             AsyncImage(url: URL(string: card.image ?? "")) { phase in
                 switch phase {
@@ -179,26 +176,26 @@ struct LorcanaSetDetailView: View {
                 }
             }
             .aspectRatio(0.714, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.sm))
             .shadow(color: inkColorForCard(card).opacity(0.3), radius: 6, y: 3)
             
             // Card name
             Text(card.name)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.white)
+                .font(Theme.Font.caption(.medium))
+                .foregroundColor(Theme.Palette.textPrimary)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .frame(height: 30)
         }
-        .padding(8)
+        .padding(Theme.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.03))
+            RoundedRectangle(cornerRadius: Theme.Radius.lg)
+                .fill(Theme.Palette.surfaceUltraSubtle)
         )
     }
     
     private func cardPlaceholder(card: LorcanaCard) -> some View {
-        RoundedRectangle(cornerRadius: 8)
+        RoundedRectangle(cornerRadius: Theme.Radius.sm)
             .fill(
                 LinearGradient(
                     colors: [inkColorForCard(card), inkColorForCard(card).opacity(0.5)],
@@ -208,21 +205,21 @@ struct LorcanaSetDetailView: View {
             )
             .overlay(
                 Image(systemName: "photo")
-                    .font(.system(size: 20))
-                    .foregroundColor(.white.opacity(0.4))
+                    .font(Theme.Font.display(20))
+                    .foregroundColor(Theme.Palette.textDisabled)
             )
     }
     
     // MARK: - Loading View
     
     private var loadingView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Theme.Spacing.lg) {
             ProgressView()
                 .tint(.purple)
                 .scaleEffect(1.2)
             
             Text("Loading set cards...")
-                .font(.system(size: 14, weight: .medium))
+                .font(Theme.Font.callout(.medium))
                 .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -231,28 +228,28 @@ struct LorcanaSetDetailView: View {
     // MARK: - Error View
     
     private func errorView(error: LorcanaError) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Theme.Spacing.lg) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 40))
+                .font(Theme.Font.display(40))
                 .foregroundColor(.orange)
             
             Text("Failed to load cards")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
+                .font(Theme.Font.subhead(.semibold))
+                .foregroundColor(Theme.Palette.textPrimary)
             
             Text(error.message)
-                .font(.system(size: 13))
+                .font(Theme.Font.body())
                 .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+                .padding(.horizontal, Theme.Spacing.huge)
             
             Button {
                 Task { await loadSetCards() }
             } label: {
                 Text("Retry")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
+                    .font(Theme.Font.callout(.semibold))
+                    .foregroundColor(Theme.Palette.textPrimary)
+                    .padding(.horizontal, Theme.Spacing.xxl)
                     .padding(.vertical, 10)
                     .background(Color.purple)
                     .clipShape(Capsule())
@@ -264,17 +261,17 @@ struct LorcanaSetDetailView: View {
     // MARK: - Empty View
     
     private var emptyView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Theme.Spacing.lg) {
             Image(systemName: "rectangle.stack.badge.minus")
-                .font(.system(size: 40))
+                .font(Theme.Font.display(40))
                 .foregroundColor(.gray)
             
             Text("No cards found")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
+                .font(Theme.Font.subhead(.semibold))
+                .foregroundColor(Theme.Palette.textPrimary)
             
             Text("This set doesn't have any cards yet")
-                .font(.system(size: 13))
+                .font(Theme.Font.body())
                 .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

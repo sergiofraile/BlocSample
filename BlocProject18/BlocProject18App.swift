@@ -22,6 +22,7 @@ struct BlocProject18App: App {
     private let formulaOneBloc = FormulaOneBloc()
     private let lorcanaBloc    = LorcanaBloc(networkService: LorcanaNetworkService())
     private let suvBloc        = SUVBloc()
+    private let scoreBloc      = ScoreBloc()
 
     init() {
         BlocObserver.shared = AppBlocObserver()
@@ -32,7 +33,7 @@ struct BlocProject18App: App {
 
     var body: some Scene {
         WindowGroup {
-            BlocProvider(with: [counterBloc, calculatorBloc, formulaOneBloc, lorcanaBloc, suvBloc]) {
+            BlocProvider(with: [counterBloc, calculatorBloc, formulaOneBloc, lorcanaBloc, suvBloc, scoreBloc]) {
                 ExamplesSplitView()
                     .frame(minWidth: 375.0, minHeight: 600.0)
             }

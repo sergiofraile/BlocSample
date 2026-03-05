@@ -42,31 +42,31 @@ struct CounterView: View {
                     .offset(x: geometry.size.width - 100, y: geometry.size.height - 200)
             }
             
-            VStack(spacing: 50) {
+            VStack(spacing: Theme.Spacing.huge) {
                 Spacer()
                 
                 // Hydration badge
-                HStack(spacing: 6) {
+                HStack(spacing: Theme.Spacing.xs) {
                     Image(systemName: "externaldrive.fill")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(Theme.Font.tiny(.semibold))
                     Text("HydratedBloc — state persists across launches")
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .font(Theme.Font.caption(.medium, .monospaced))
                 }
                 .foregroundColor(.cyan.opacity(0.7))
                 .padding(.horizontal, 14)
-                .padding(.vertical, 6)
+                .padding(.vertical, Theme.Spacing.xs)
                 .background(Capsule().fill(Color.cyan.opacity(0.1)))
                 .overlay(Capsule().stroke(Color.cyan.opacity(0.25), lineWidth: 1))
 
                 // Counter display
-                VStack(spacing: 12) {
+                VStack(spacing: Theme.Spacing.md) {
                     Text("COUNTER")
-                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .font(Theme.Font.body(.semibold, .monospaced))
                         .tracking(6)
                         .foregroundColor(.cyan.opacity(0.7))
                     
                     Text("\(counterBloc.state)")
-                        .font(.system(size: 96, weight: .thin, design: .rounded))
+                        .font(Theme.Font.display(96, weight: .thin, design: .rounded))
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [.white, .cyan.opacity(0.8)],
@@ -74,20 +74,20 @@ struct CounterView: View {
                                 endPoint: .bottom
                             )
                         )
-                        .padding(.vertical, 24)
+                        .padding(.vertical, Theme.Spacing.xxl)
                         .contentTransition(.numericText())
                         .animation(.spring(response: 0.3), value: counterBloc.state)
                 }
-                .padding(.vertical, 40)
+                .padding(.vertical, Theme.Spacing.huge)
                 .padding(.horizontal, 60)
                 .background(
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: Theme.Radius.huge)
                         .fill(.ultraThinMaterial.opacity(0.3))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 24)
+                            RoundedRectangle(cornerRadius: Theme.Radius.huge)
                                 .stroke(
                                     LinearGradient(
-                                        colors: [.white.opacity(0.2), .clear],
+                                        colors: [Theme.Palette.borderStrong, .clear],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     ),
@@ -99,7 +99,7 @@ struct CounterView: View {
                 Spacer()
                 
                 // Control buttons
-                HStack(spacing: 40) {
+                HStack(spacing: Theme.Spacing.huge) {
                     // Decrement button
                     Button(action: {
                         withAnimation(.spring(response: 0.3)) {
@@ -123,8 +123,8 @@ struct CounterView: View {
                                 .shadow(color: Color(red: 0.9, green: 0.3, blue: 0.4).opacity(0.4), radius: 12, y: 6)
                             
                             Image(systemName: "minus")
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundColor(.white)
+                                .font(Theme.Font.display(28, weight: .bold))
+                                .foregroundColor(Theme.Palette.textPrimary)
                         }
                         .scaleEffect(animateDecrement ? 0.9 : 1.0)
                     }
@@ -153,8 +153,8 @@ struct CounterView: View {
                                 .shadow(color: Color(red: 0.3, green: 0.8, blue: 0.7).opacity(0.4), radius: 12, y: 6)
                             
                             Image(systemName: "plus")
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundColor(.white)
+                                .font(Theme.Font.display(28, weight: .bold))
+                                .foregroundColor(Theme.Palette.textPrimary)
                         }
                         .scaleEffect(animateIncrement ? 0.9 : 1.0)
                     }
@@ -163,36 +163,34 @@ struct CounterView: View {
                 
                 // Reset buttons
                 VStack(spacing: 10) {
-                    // Standard Bloc reset — emits 0 via event, which also persists 0
                     Button(action: { counterBloc.send(.reset) }) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: Theme.Spacing.sm) {
                             Image(systemName: "arrow.counterclockwise")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(Theme.Font.body(.semibold))
                             Text("Reset (persists 0)")
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .font(Theme.Font.body(.semibold, .rounded))
                         }
-                        .foregroundColor(.white.opacity(0.7))
-                        .padding(.horizontal, 20)
+                        .foregroundColor(Theme.Palette.textSecondary)
+                        .padding(.horizontal, Theme.Spacing.xl)
                         .padding(.vertical, 10)
                         .background(
                             Capsule()
-                                .fill(.white.opacity(0.1))
-                                .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
+                                .fill(Theme.Palette.surfaceMedium)
+                                .overlay(Capsule().stroke(Theme.Palette.borderStrong, lineWidth: 1))
                         )
                     }
                     .buttonStyle(.plain)
                     .help("Sends .reset event → emits 0 → 0 is also written to UserDefaults")
 
-                    // HydratedBloc reset — clears storage AND emits initialState immediately
                     Button(action: { counterBloc.resetToInitialState() }) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: Theme.Spacing.sm) {
                             Image(systemName: "externaldrive.badge.minus")
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(Theme.Font.body(.semibold))
                             Text("Clear Stored State + Reset")
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .font(Theme.Font.body(.semibold, .rounded))
                         }
                         .foregroundColor(.cyan.opacity(0.85))
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, Theme.Spacing.xl)
                         .padding(.vertical, 10)
                         .background(
                             Capsule()
@@ -204,8 +202,8 @@ struct CounterView: View {
                     .help("Calls resetToInitialState(): deletes the UserDefaults key, then emits 0 immediately")
 
                     Text("Increment, then quit and relaunch — the count is restored from UserDefaults.")
-                        .font(.system(size: 11, weight: .regular, design: .rounded))
-                        .foregroundColor(.white.opacity(0.3))
+                        .font(Theme.Font.caption(.regular, .rounded))
+                        .foregroundColor(Theme.Palette.textQuaternary)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: 280)
                 }
