@@ -10,8 +10,10 @@ import SwiftUI
 struct LorcanaCardDetailView: View {
     
     let card: LorcanaCard
-    @State private var imageLoaded = false
-    
+
+    /// Controls whether the full-screen card zoom overlay is shown.
+    @State private var isCardExpanded = false
+
     var body: some View {
         ZStack {
             // Background gradient matching ink colour
@@ -52,6 +54,13 @@ struct LorcanaCardDetailView: View {
                 .padding(.horizontal, Theme.Spacing.xl)
                 .padding(.top, Theme.Spacing.xl)
             }
+
+            // Full-screen card zoom overlay — sits above everything in the ZStack
+            if isCardExpanded {
+                expandedCardOverlay
+                    .transition(.opacity)
+                    .zIndex(10)
+            }
         }
         .navigationTitle(card.name)
         .navigationBarTitleDisplayMode(.inline)
@@ -59,11 +68,31 @@ struct LorcanaCardDetailView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .tint(.white)
+        .animation(.spring(response: 0.45, dampingFraction: 0.82), value: isCardExpanded)
     }
     
     // MARK: - Card Image
-    
+
     private var cardImageSection: some View {
+        VStack(spacing: Theme.Spacing.sm) {
+            cardImage(maxWidth: 280)
+                // Subtle press-in scale so the tap feels responsive
+                .scaleEffect(isCardExpanded ? 0.94 : 1.0)
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                        isCardExpanded = true
+                    }
+                }
+
+            // Tap hint
+            Label("Tap to enlarge", systemImage: "arrow.up.left.and.arrow.down.right")
+                .font(Theme.Font.caption())
+                .foregroundStyle(.white.opacity(0.35))
+        }
+    }
+
+    /// Renders the card image (or placeholder) at the given max width.
+    private func cardImage(maxWidth: CGFloat) -> some View {
         AsyncImage(url: URL(string: card.image ?? "")) { phase in
             switch phase {
             case .success(let image):
@@ -81,8 +110,48 @@ struct LorcanaCardDetailView: View {
                 cardPlaceholder
             }
         }
-        .frame(maxWidth: 280)
+        .frame(maxWidth: maxWidth)
         .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Expanded overlay
+
+    /// Full-screen overlay that shows the card at maximum readable size.
+    ///
+    /// Tapping anywhere — backdrop or card — springs the card back to its
+    /// original position.
+    private var expandedCardOverlay: some View {
+        ZStack {
+            // Blurred, darkened backdrop
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .background(Color.black.opacity(0.75))
+                .ignoresSafeArea()
+                .onTapGesture { dismiss() }
+
+            VStack(spacing: Theme.Spacing.xl) {
+                // Enlarged card — springs in from small to full size
+                cardImage(maxWidth: .infinity)
+                    .padding(.horizontal, Theme.Spacing.xl)
+                    .transition(
+                        .scale(scale: 0.55, anchor: .top)
+                        .combined(with: .opacity)
+                    )
+                    .onTapGesture { dismiss() }
+
+                // Dismiss hint
+                Label("Tap anywhere to close", systemImage: "xmark.circle")
+                    .font(Theme.Font.caption())
+                    .foregroundStyle(.white.opacity(0.45))
+                    .transition(.opacity)
+            }
+        }
+    }
+
+    private func dismiss() {
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.88)) {
+            isCardExpanded = false
+        }
     }
     
     private var cardPlaceholder: some View {

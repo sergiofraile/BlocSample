@@ -24,6 +24,7 @@ A Swift implementation of the [Bloc pattern](https://bloclibrary.dev/) for build
   * [BlocListener](#bloclistener)
   * [buildWhen / listenWhen](#buildwhen--listenwhen)
   * [Event Transformers](#event-transformers)
+  * [BlocSelector](#blocselector)
 * [Examples](#examples)
 * [Documentation](#documentation)
 * [Installation](#installation)
@@ -1098,7 +1099,7 @@ filter.
   about one.
 - You want a subsection to update at discrete thresholds, not on every emit.
 - For even stricter derived-value control (e.g. `\.isLoading`), see
-  `BlocSelector` (coming soon).
+  `BlocSelector`.
 
 ### `listenWhen` in BlocListener
 
@@ -1277,6 +1278,90 @@ on(where: { if case .loadSet = $0 { return true }; return false }) { event, emit
 > `.search` handler, the view simply calls `bloc.send(.search(query: newValue))`
 > on every keystroke — the Bloc handles the timing. The view's `handleSearchChange`
 > method and `@State private var searchTask` are gone.
+
+---
+
+## BlocSelector
+
+`BlocSelector` is the most targeted rebuild primitive in the library. It projects
+the full Bloc state down to a single `Equatable` value using a `selector` closure,
+and rebuilds its content **only** when that derived value changes under `==`.
+
+### Rebuild scope comparison
+
+| Primitive | Rebuilds when… | Content receives |
+|-----------|----------------|-----------------|
+| `BlocBuilder` | Any state field observed by `@Observable` | Full live Bloc |
+| `BlocBuilderWhen` | `buildWhen(old, new)` returns `true` | State snapshot |
+| `BlocSelector` | `selector(state)` returns a new `Equatable` value | Derived value only |
+
+### Basic usage — KeyPath shorthand
+
+Swift promotes a `KeyPath` to a `(State) -> Value` function automatically, so the
+most common form is very concise:
+
+```swift
+// Rebuilds only when isLoading flips — card list updates are invisible to this view
+BlocSelector(LorcanaBloc.self, selector: \.isLoading) { isLoading in
+    if isLoading {
+        ProgressView("Summoning cards…")
+    }
+}
+```
+
+### Custom selector closure
+
+For computed or multi-field derivations, use a full closure:
+
+```swift
+BlocSelector(
+    LorcanaBloc.self,
+    selector: { $0.cards.count }
+) { count in
+    Text("\(count) cards loaded")
+        .font(.caption)
+        .foregroundStyle(.secondary)
+}
+```
+
+### Composing multiple fields
+
+Bundle related fields in an `Equatable` struct to derive several values with a
+single selector — and still get the deduplication guarantee:
+
+```swift
+struct PaginationSummary: Equatable {
+    let isLoadingMore: Bool
+    let hasMorePages: Bool
+    let cardCount: Int
+}
+
+BlocSelector(
+    LorcanaBloc.self,
+    selector: { PaginationSummary(
+        isLoadingMore: $0.isLoadingMore,
+        hasMorePages:  $0.hasMorePages,
+        cardCount:     $0.cards.count
+    )}
+) { summary in
+    PaginationFooter(summary: summary)
+}
+// Only rebuilds when any of the three fields change, not on every card append.
+```
+
+### When `BlocSelector` makes the biggest difference
+
+- **Large state structs** where a subview only cares about one field.
+- **Lists with pagination** — the footer only needs `isLoadingMore` and `hasMorePages`;
+  it should not rebuild on every `cards.append(contentsOf:)`.
+- **Status badges** derived from a boolean or enum — always `Equatable`, always cheap
+  to compare.
+
+> **Demo:** Open the **Lorcana** example. The infinite-scroll list footer is
+> implemented with two `BlocSelector` views: one for the "Loading more…" spinner
+> (selector: `\.isLoadingMore`) and one for the "You've seen all N cards!" end-of-list
+> message (selector: a custom `PaginationSummary` struct). As cards are appended one
+> page at a time, neither footer rebuilds until the loading flag or page boundary changes.
 
 ---
 
@@ -1542,7 +1627,7 @@ A comprehensive trading card game browser demonstrating search, pagination with 
 |--------|---------|
 | **State** | `struct` with cards, sets, pagination, loading states, and search query |
 | **Events** | `fetchAllCards`, `search(query)`, `loadNextPage`, `loadSet(name)`, `clear` |
-| **Patterns** | Debounced search via `.debounce` transformer, infinite scroll pagination, async image loading, multi-screen navigation, ink color theming |
+| **Patterns** | Debounced search via `.debounce` transformer, `BlocSelector` for fine-grained footer rebuilds, infinite scroll pagination, async image loading, multi-screen navigation, ink color theming |
 
 **Location:** `Examples/Lorcana/`
 

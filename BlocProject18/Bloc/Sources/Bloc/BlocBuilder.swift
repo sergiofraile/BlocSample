@@ -150,7 +150,7 @@ public struct BlocBuilder<B: BlocBase, Content: View>: View {
 ///
 /// - A state struct has many fields but a sub-view only cares about one.
 /// - You want a section to update at discrete thresholds, not on every emit.
-/// - For the strictest derived-value control, see `BlocSelector` (coming soon).
+/// - For the strictest derived-value control, see ``BlocSelector``.
 ///
 /// ## Topics
 ///

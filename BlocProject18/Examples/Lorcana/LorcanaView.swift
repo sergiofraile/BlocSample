@@ -267,24 +267,33 @@ struct LorcanaView: View {
                     }
                 }
                 
-                // Loading more indicator
-                if lorcanaBloc.state.isLoadingMore {
-                    HStack(spacing: Theme.Spacing.md) {
-                        ProgressView()
-                            .tint(.purple)
-                        Text("Loading more...")
+                // BlocSelector: only rebuilds this footer when isLoadingMore
+                // changes — the card list scrolls without triggering this view.
+                BlocSelector(LorcanaBloc.self, selector: \.isLoadingMore) { isLoadingMore in
+                    if isLoadingMore {
+                        HStack(spacing: Theme.Spacing.md) {
+                            ProgressView()
+                                .tint(.purple)
+                            Text("Loading more...")
+                                .font(Theme.Font.callout())
+                                .foregroundColor(.gray)
+                        }
+                        .padding(.vertical, Theme.Spacing.xl)
+                    }
+                }
+
+                // BlocSelector: only rebuilds when the pagination summary changes
+                // (hasMorePages or card count), not on every individual card append.
+                BlocSelector(
+                    LorcanaBloc.self,
+                    selector: { PaginationSummary(hasMore: $0.hasMorePages, count: $0.cards.count) }
+                ) { summary in
+                    if !summary.hasMore && summary.count > 0 {
+                        Text("You've seen all \(summary.count) cards!")
                             .font(Theme.Font.callout())
                             .foregroundColor(.gray)
+                            .padding(.vertical, Theme.Spacing.xl)
                     }
-                    .padding(.vertical, Theme.Spacing.xl)
-                }
-                
-                // End of list indicator
-                if !lorcanaBloc.state.hasMorePages && !lorcanaBloc.state.cards.isEmpty {
-                    Text("You've seen all \(lorcanaBloc.state.cards.count) cards!")
-                        .font(Theme.Font.callout())
-                        .foregroundColor(.gray)
-                        .padding(.vertical, Theme.Spacing.xl)
                 }
             }
             .padding(.horizontal, Theme.Spacing.lg)
@@ -476,6 +485,18 @@ struct LorcanaView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
+}
+
+// MARK: - BlocSelector value types
+
+/// Equatable snapshot used by the pagination `BlocSelector`.
+///
+/// Bundling both fields in one struct lets a single selector track the full
+/// "is there more to load?" story — and `BlocSelector` only rebuilds the
+/// footer when *either* value changes.
+private struct PaginationSummary: Equatable {
+    let hasMore: Bool
+    let count: Int
 }
 
 #Preview {
