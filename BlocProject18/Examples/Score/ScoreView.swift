@@ -62,7 +62,7 @@ private enum Tier: String, Equatable {
 
 // MARK: - ScoreView
 
-/// Demonstrates ``BlocListener`` and ``BlocBuilderWhen`` in one screen.
+/// Demonstrates ``BlocListener``, ``BlocBuilder``, and ``BlocConsumer`` together.
 ///
 /// Three distinct reactive layers are stacked together:
 ///
@@ -73,14 +73,16 @@ private enum Tier: String, Equatable {
 /// 2. **`BlocListener`** — fires a milestone banner side-effect at every 5-point
 ///    boundary without rebuilding any content.
 ///
-/// 3. **`BlocBuilderWhen`** — the Tier badge renders a state snapshot and only
-///    redraws when the score crosses a tier boundary (every 10 pts).
+/// 3. **`BlocConsumer`** — the Tier badge rebuilds only at tier boundaries (every
+///    10 pts) **and** triggers a pulse animation as a side effect at the same
+///    moment — two behaviours, one component, one subscription.
 struct ScoreView: View {
 
     let scoreBloc = BlocRegistry.resolve(ScoreBloc.self)
 
     @State private var milestoneText: String? = nil
     @State private var dismissTask: Task<Void, Never>? = nil
+    @State private var tierPulse = false
 
     var body: some View {
         ZStack {
@@ -147,8 +149,8 @@ struct ScoreView: View {
             featurePill(symbol: "bell.badge.fill",
                         text: "BlocListener — milestone side-effect",
                         color: .orange)
-            featurePill(symbol: "arrow.triangle.2.circlepath",
-                        text: "BlocBuilderWhen — tier rebuilds only",
+            featurePill(symbol: "square.stack.fill",
+                        text: "BlocConsumer — tier rebuild + animation",
                         color: .cyan)
         }
     }
@@ -156,10 +158,10 @@ struct ScoreView: View {
     private func featurePill(symbol: String, text: String, color: Color) -> some View {
         HStack(spacing: 8) {
             Image(systemName: symbol)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(color)
             Text(text)
-                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .font(.system(size: 13, weight: .medium, design: .rounded))
                 .foregroundColor(.white.opacity(0.75))
         }
         .padding(.horizontal, 14)
@@ -175,7 +177,7 @@ struct ScoreView: View {
             let tier = Tier(score: bloc.state)
             VStack(spacing: 8) {
                 Text("SCORE")
-                    .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
                     .tracking(5)
                     .foregroundColor(.white.opacity(0.5))
 
@@ -194,7 +196,7 @@ struct ScoreView: View {
                     .animation(.easeInOut(duration: 0.5), value: tier)
 
                 Text("Next milestone at \(nextMilestone(for: bloc.state)) pts")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
                     .foregroundColor(.white.opacity(0.35))
             }
             .padding(.vertical, 32)
@@ -223,15 +225,24 @@ struct ScoreView: View {
         score + (5 - score % 5)
     }
 
-    // BlocBuilderWhen: only redraws when Tier(score:) changes — every 10 pts.
+    // BlocConsumer: redraws the tier badge only on tier changes (buildWhen) AND
+    // fires a pulse animation as a side effect at the same moment (listenWhen).
     private var tierDisplay: some View {
-        BlocBuilderWhen(ScoreBloc.self,
+        BlocConsumer(ScoreBloc.self,
+            listenWhen: { old, new in Tier(score: old) != Tier(score: new) },
+            listener: { _ in
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.4)) { tierPulse = true }
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(400))
+                    withAnimation(.spring(response: 0.3)) { tierPulse = false }
+                }
+            },
             buildWhen: { old, new in Tier(score: old) != Tier(score: new) }
         ) { state in
             let tier = Tier(score: state)
             HStack(spacing: 10) {
                 Image(systemName: tier.symbolName)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [tier.color, tier.color.opacity(0.6)],
@@ -241,10 +252,10 @@ struct ScoreView: View {
                     )
                 VStack(alignment: .leading, spacing: 2) {
                     Text(tier.rawValue)
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .font(.system(size: 19, weight: .bold, design: .rounded))
                         .foregroundColor(tier.color)
                     Text(tierSubtitle(tier))
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundColor(.white.opacity(0.5))
                 }
             }
@@ -252,12 +263,14 @@ struct ScoreView: View {
             .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(tier.color.opacity(0.10))
+                    .fill(tier.color.opacity(tierPulse ? 0.22 : 0.10))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14)
-                            .stroke(tier.color.opacity(0.30), lineWidth: 1)
+                            .stroke(tier.color.opacity(tierPulse ? 0.65 : 0.30), lineWidth: tierPulse ? 1.5 : 1)
                     )
+                    .shadow(color: tier.color.opacity(tierPulse ? 0.45 : 0), radius: 14, y: 4)
             )
+            .scaleEffect(tierPulse ? 1.06 : 1.0)
             .transition(.scale.combined(with: .opacity))
             .animation(.spring(response: 0.4), value: tier.rawValue)
         }
@@ -279,9 +292,9 @@ struct ScoreView: View {
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: 22, weight: .semibold))
                     Text("Score!")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: 280)
@@ -306,9 +319,9 @@ struct ScoreView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                     Text("Reset")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
                 }
                 .foregroundColor(.white.opacity(0.6))
                 .padding(.horizontal, 24)
@@ -321,8 +334,8 @@ struct ScoreView: View {
             }
             .buttonStyle(.plain)
 
-            Text("Every 5 pts → BlocListener fires. Tier badge rebuilds only at 10, 20, 30 pts.")
-                .font(.system(size: 11, weight: .regular, design: .rounded))
+            Text("Every 5 pts → BlocListener fires. Tier badge: BlocConsumer rebuilds + animates at 10, 20, 30 pts.")
+                .font(.system(size: 13, weight: .regular, design: .rounded))
                 .foregroundColor(.white.opacity(0.30))
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 300)
@@ -333,7 +346,7 @@ struct ScoreView: View {
     private func milestoneBanner(_ text: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "star.fill")
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(
                     LinearGradient(
                         colors: [.yellow, .orange],
@@ -342,7 +355,7 @@ struct ScoreView: View {
                     )
                 )
             Text(text)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
                 .foregroundColor(.white)
         }
         .padding(.horizontal, 20)

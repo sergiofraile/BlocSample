@@ -31,6 +31,7 @@ A Swift implementation of the [Bloc pattern](https://bloclibrary.dev/) for build
   * [buildWhen / listenWhen](#buildwhen--listenwhen)
   * [Event Transformers](#event-transformers)
   * [BlocSelector](#blocselector)
+  * [BlocConsumer](#blocconsumer)
 * [Examples](#examples)
 * [Running the Examples](#running-the-examples)
 * [Documentation](#documentation)
@@ -1438,42 +1439,121 @@ BlocSelector(
 
 ---
 
+## BlocConsumer
+
+`BlocConsumer` is the all-in-one component for when a state change must both
+**trigger a side effect** and **conditionally update the UI** — and you want a
+single, coherent declaration instead of nested `BlocListener` + `BlocBuilderWhen`.
+
+### When to use each component
+
+| Component | Side effect | UI rebuild | Content receives |
+|-----------|-------------|------------|-----------------|
+| Direct property + `@Observable` | — | Every change | Live Bloc |
+| `BlocBuilder` | — | Every change | Live Bloc |
+| `BlocBuilderWhen` | — | `buildWhen` gated | State snapshot |
+| `BlocListener` | `listenWhen` gated | Never | — |
+| **`BlocConsumer`** | `listenWhen` gated | `buildWhen` gated | State snapshot |
+
+### Basic usage
+
+```swift
+// Tier badge: only redraw when the tier changes (every 10 pts)
+// AND pulse-animate as a side effect at the exact same moment.
+BlocConsumer(ScoreBloc.self,
+    listenWhen: { old, new in Tier(score: old) != Tier(score: new) },
+    listener:   { _ in triggerTierPulseAnimation() },
+    buildWhen:  { old, new in Tier(score: old) != Tier(score: new) }
+) { state in
+    TierBadge(tier: Tier(score: state))
+}
+```
+
+### Independent predicates
+
+`listenWhen` and `buildWhen` are evaluated on every state update but are
+completely independent — they can fire at different rates:
+
+```swift
+// Side effect every 5 pts; UI snapshot updated every 10 pts.
+BlocConsumer(ScoreBloc.self,
+    listenWhen: { _, new in new % 5 == 0 },
+    listener:   { _ in playChime() },
+    buildWhen:  { old, new in old / 10 != new / 10 }
+) { state in
+    TierBadge(tier: Tier(score: state))
+}
+```
+
+### Sending events from content
+
+The `content` closure receives a `B.State` snapshot rather than the live Bloc,
+so `buildWhen` fully controls rebuilds without `@Observable` bypassing the
+filter. To send events from inside `content`, resolve the Bloc directly:
+
+```swift
+BlocConsumer(CounterBloc.self,
+    listenWhen: { _, new in new >= 100 },
+    listener:   { _ in showCongratulations() }
+) { state in
+    let bloc = BlocRegistry.resolve(CounterBloc.self)
+    Text("Count: \(state)")
+    Button("+") { bloc.send(.increment) }
+}
+```
+
+### Defaults
+
+Both predicates default to `nil`, which means they always trigger — making
+`BlocConsumer(…)` with no predicates equivalent to `BlocListener` + `BlocBuilder` combined.
+
+> **Demo:** Open the **Score Board** example. The tier badge is a `BlocConsumer`:
+> `buildWhen` gates rebuilds to tier boundaries (every 10 pts), while `listenWhen`
+> triggers a glow-and-scale pulse animation at the exact same moment. The outer
+> `BlocListener` (every 5 pts → milestone banner) remains separate, showing that
+> you can freely mix `BlocListener` and `BlocConsumer` in the same view.
+
+---
+
 ## Examples
 
-The project includes four example implementations that demonstrate different complexity levels:
+The project includes eight example implementations that demonstrate different complexity levels:
 
 ### 🎮 Score Board Example
 
-Demonstrates `BlocListener` and `buildWhen` in `BlocBuilder`:
+Demonstrates `BlocListener`, `BlocBuilder`, and `BlocConsumer` in one screen:
 
 | Aspect | Details |
 |--------|---------|
 | **State** | `Int` (current score) |
 | **Events** | `addPoint`, `reset` |
-| **Patterns** | `BlocListener` for milestone toasts, `BlocBuilder(buildWhen:)` for tier badge |
+| **Patterns** | `BlocListener` for milestone toasts (every 5 pts), `BlocConsumer` for tier badge rebuild + glow animation (every 10 pts) |
 
 **Location:** `Examples/Score/`
 
 ```swift
-// BlocListener — fires only at every 5-point milestone (side effect)
+// BlocListener — fires only at every 5-point milestone (pure side effect)
 BlocListener(ScoreBloc.self,
     listenWhen: { _, new in new > 0 && new % 5 == 0 }
 ) { state in
     showMilestoneBanner("🎯 \(state) points!")
 } content: {
-    // BlocBuilder with buildWhen — only redraws when the tier changes
-    BlocBuilder(ScoreBloc.self,
-        buildWhen: { old, new in old / 10 != new / 10 }
+    // BlocConsumer — rebuilds AND pulses at tier boundaries (every 10 pts)
+    BlocConsumer(ScoreBloc.self,
+        listenWhen: { old, new in Tier(score: old) != Tier(score: new) },
+        listener:   { _ in triggerTierPulse() },
+        buildWhen:  { old, new in Tier(score: old) != Tier(score: new) }
     ) { state in
-        TierBadge(tier: tierName(for: state))
+        TierBadge(tier: Tier(score: state))   // state snapshot, not live Bloc
     }
 }
 ```
 
 **Key Learnings:**
-- `BlocListener` side effects leave the content untouched
-- `buildWhen` with a state snapshot prevents mid-tier rebuilds
-- All three reactive layers (`@Observable` direct access, `BlocListener`, `BlocBuilder`) coexist in one screen
+- `BlocListener` is for pure side effects — it never triggers a rebuild
+- `BlocConsumer` combines `listenWhen` + `buildWhen` into one component with a single Combine subscription
+- The two predicates are independent: `listenWhen` and `buildWhen` can fire at different rates
+- `content` receives a `B.State` snapshot so `buildWhen` fully owns the rebuild gate
 
 ---
 
@@ -1973,7 +2053,7 @@ The app ships with [Pulse](https://github.com/kean/Pulse) in `DEBUG` builds. Eve
 | **Stopwatch** | `Examples/Timer/` | `Cubit`, direct method calls, async tick Task, `onClose()` |
 | **Calculator** | `Examples/Calculator/` | Lifecycle hooks: `onEvent`, `onChange`, `onTransition`, `onError` |
 | **Heartbeat** | `Examples/Heartbeat/` | Scoped `Bloc`, `close()` on screen dismiss |
-| **Score Board** | `Examples/Score/` | `BlocListener` side-effects, `buildWhen` targeted rebuilds |
+| **Score Board** | `Examples/Score/` | `BlocListener` side-effects, `BlocConsumer` (rebuild + animation), `buildWhen` |
 | **Formula One** | `Examples/FormulaOne/` | Async API fetching, loading/error state, remote data |
 | **SUVs** | `Examples/SUVs/` | Complex state machine, authentication flow, Repository pattern |
 | **Lorcana** | `Examples/Lorcana/` | Search + `.debounce` transformer, infinite scroll, `BlocSelector`, multi-screen navigation |
