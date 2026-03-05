@@ -7,26 +7,36 @@
 
 import Bloc
 
+/// A simple counter that demonstrates ``HydratedBloc`` state persistence.
+///
+/// The current count survives app restarts — it is automatically saved to
+/// `UserDefaults` on every increment/decrement and rehydrated when the app
+/// launches again. `Int` conforms to `Codable` out of the box, so no extra
+/// setup is needed.
+///
+/// - To reset the counter and clear storage immediately, call ``resetToInitialState()``.
+/// - To only wipe storage without affecting the running session, call ``clearStoredState()``.
 @MainActor
-class CounterBloc: Bloc<Int, CounterEvent> {
+class CounterBloc: HydratedBloc<Int, CounterEvent> {
+
     enum Consts {
         static let initialState: Int = 0
     }
 
-    override init(initialState: Int = Consts.initialState) {
-        super.init(initialState: initialState)
+    init() {
+        super.init(initialState: Consts.initialState)
 
-        self.on(.increment) { [weak self] event, emit in
+        on(.increment) { [weak self] _, emit in
             guard let self else { return }
-            emit(self.state + 1)
+            emit(state + 1)
         }
 
-        self.on(.decrement) { [weak self] event, emit in
+        on(.decrement) { [weak self] _, emit in
             guard let self else { return }
-            emit(self.state - 1)
+            emit(state - 1)
         }
 
-        self.on(.reset) { _, emit in
+        on(.reset) { _, emit in
             emit(Consts.initialState)
         }
     }

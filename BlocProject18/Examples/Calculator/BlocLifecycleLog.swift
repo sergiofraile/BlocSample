@@ -34,7 +34,7 @@ final class BlocLifecycleLog {
         let message: String
 
         enum Kind {
-            case event, change, transition, error
+            case event, change, transition, error, close
 
             var label: String {
                 switch self {
@@ -42,6 +42,7 @@ final class BlocLifecycleLog {
                 case .change:     return "CHANGE"
                 case .transition: return "TRANSITION"
                 case .error:      return "ERROR"
+                case .close:      return "CLOSE"
                 }
             }
 
@@ -51,6 +52,7 @@ final class BlocLifecycleLog {
                 case .change:     return .cyan
                 case .transition: return .purple
                 case .error:      return .red
+                case .close:      return .orange
                 }
             }
 
@@ -60,6 +62,7 @@ final class BlocLifecycleLog {
                 case .change:     return "arrow.left.arrow.right"
                 case .transition: return "arrow.triangle.swap"
                 case .error:      return "exclamationmark.triangle"
+                case .close:      return "xmark.circle"
                 }
             }
         }

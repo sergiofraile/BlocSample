@@ -62,15 +62,34 @@
 public final class BlocRegistry {
     
     // MARK: - Singleton
-    
+
     private static var shared: BlocRegistry?
-    
+
     // MARK: - Storage
-    
+
     private var registeredBlocs: [ObjectIdentifier: any BlocBase] = [:]
-    
+
+    /// Flat list used by `deinit`, which cannot access the `@MainActor`-isolated
+    /// `registeredBlocs` dictionary directly.
+    ///
+    /// Written once in `init` (on the main thread) and only read in `deinit`
+    /// (also on the main thread, because every reference to `BlocRegistry` is
+    /// held by `@MainActor` code). Marked `nonisolated(unsafe)` to satisfy the
+    /// compiler's strict concurrency checks.
+    nonisolated(unsafe) private var registeredBlocsForDeinit: [any BlocBase] = []
+
+    /// Whether this registry is still the active one.
+    ///
+    /// Set to `false` by the next registry's `init` before replacing
+    /// `BlocRegistry.shared`. Guarded in `deinit` so only the registry that
+    /// is active at deallocation time triggers `close()` on its Blocs.
+    ///
+    /// Marked `nonisolated(unsafe)` so `deinit` (which is non-isolated) can
+    /// read it safely. In practice all writes and reads happen on the main thread.
+    nonisolated(unsafe) private var isActive = true
+
     // MARK: - Initialization
-    
+
     /// Creates a new registry with the specified Blocs.
     ///
     /// - Note: This initializer is called internally by ``BlocProvider``.
@@ -83,7 +102,21 @@ public final class BlocRegistry {
             let key = ObjectIdentifier(type(of: bloc))
             registeredBlocs[key] = bloc
         }
+        registeredBlocsForDeinit = blocs
+        // Deactivate the previous registry before replacing it, so its deinit
+        // knows not to close Blocs that are still in use by this new registry.
+        BlocRegistry.shared?.isActive = false
         BlocRegistry.shared = self
+    }
+
+    deinit {
+        // Only the registry that was still active at the time of deallocation
+        // should close its Blocs. Replaced registries are deactivated in init.
+        guard isActive else { return }
+        let blocs = registeredBlocsForDeinit
+        Task { @MainActor [blocs] in
+            blocs.forEach { $0.close() }
+        }
     }
     
     // MARK: - Type-safe Resolution
@@ -160,6 +193,28 @@ public final class BlocRegistry {
         return bloc
     }
     
+    // MARK: - Hydration Utilities
+
+    /// Calls ``AnyHydratedBloc/resetToInitialState()`` on every registered
+    /// ``HydratedBloc``, then clears any remaining keys from
+    /// ``UserDefaultsStorage``.
+    ///
+    /// Use this as a "clean slate" action — equivalent to wiping storage and
+    /// reinstalling the app, but applied immediately without a restart:
+    ///
+    /// ```swift
+    /// // In your settings or debug UI
+    /// BlocRegistry.resetAllHydratedBlocs()
+    /// ```
+    public static func resetAllHydratedBlocs() {
+        guard let registry = shared else { return }
+        for bloc in registry.registeredBlocs.values {
+            (bloc as? any AnyHydratedBloc)?.resetToInitialState()
+        }
+        // Belt-and-suspenders: wipe any keys whose blocs are not registered.
+        UserDefaultsStorage.shared.clear()
+    }
+
     // MARK: - Legacy API
     
     /// Resolves a Bloc by its State and Event types.

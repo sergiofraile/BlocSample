@@ -20,7 +20,7 @@ struct CalculatorView: View {
                 Divider()
                     .background(Color.white.opacity(0.08))
 
-                LifecycleLogView(log: bloc.lifecycleLog)
+                LifecycleLogView(bloc: bloc)
                     .frame(maxWidth: .infinity)
             }
         }
@@ -47,8 +47,9 @@ private struct CalculatorPadView: View {
     private let buttonSpacing: CGFloat = 10
 
     var body: some View {
-        VStack(spacing: 0) {
-            DisplayView(state: bloc.state)
+        ZStack {
+            VStack(spacing: 0) {
+                DisplayView(state: bloc.state)
                 .padding(.horizontal, 20)
                 .padding(.top, 24)
                 .padding(.bottom, 16)
@@ -107,6 +108,29 @@ private struct CalculatorPadView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 24)
         }
+        .opacity(bloc.isClosed ? 0.35 : 1.0)
+        .animation(.easeInOut(duration: 0.3), value: bloc.isClosed)
+
+        // Closed overlay — shown when close() has been called
+        if bloc.isClosed {
+            VStack(spacing: 12) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 40, weight: .thin))
+                    .foregroundStyle(.orange)
+                Text("Bloc Closed")
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                Text("send() and emit() are no-ops.\nIn a real app, navigate away or\nreplace the Bloc to continue.")
+                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                    .foregroundColor(.white.opacity(0.5))
+                    .multilineTextAlignment(.center)
+            }
+            .padding(24)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .transition(.scale(scale: 0.9).combined(with: .opacity))
+        }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: bloc.isClosed)
     }
 }
 
@@ -253,16 +277,36 @@ private struct CalcButton: View {
 // MARK: - Lifecycle Log Panel
 
 private struct LifecycleLogView: View {
-    let log: BlocLifecycleLog
+    let bloc: CalculatorBloc
+    @State private var showingCloseConfirm = false
+
+    private var log: BlocLifecycleLog { bloc.lifecycleLog }
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Lifecycle Log")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white)
+                    HStack(spacing: 6) {
+                        Text("Lifecycle Log")
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundColor(.white)
+
+                        // Status badge
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(bloc.isClosed ? Color.orange : Color.green)
+                                .frame(width: 6, height: 6)
+                            Text(bloc.isClosed ? "CLOSED" : "ACTIVE")
+                                .font(.system(size: 9, weight: .bold, design: .rounded))
+                                .foregroundColor(bloc.isClosed ? .orange : .green)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule().fill((bloc.isClosed ? Color.orange : Color.green).opacity(0.12))
+                        )
+                    }
                     Text("\(log.entries.count) events")
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundColor(.white.opacity(0.4))
@@ -276,7 +320,8 @@ private struct LifecycleLogView: View {
                         BlocLifecycleLog.LogEntry.Kind.event,
                         .change,
                         .transition,
-                        .error
+                        .error,
+                        .close
                     ], id: \.label) { kind in
                         HStack(spacing: 4) {
                             Image(systemName: kind.symbol)
@@ -293,6 +338,28 @@ private struct LifecycleLogView: View {
                     }
                 }
 
+                // Close bloc button (disabled once already closed)
+                Button {
+                    showingCloseConfirm = true
+                } label: {
+                    Image(systemName: "stop.circle")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(bloc.isClosed ? .white.opacity(0.15) : .orange.opacity(0.7))
+                }
+                .buttonStyle(.plain)
+                .disabled(bloc.isClosed)
+                .help("Close this Bloc — demonstrates lifecycle teardown")
+                .confirmationDialog(
+                    "Close Bloc?",
+                    isPresented: $showingCloseConfirm,
+                    titleVisibility: .visible
+                ) {
+                    Button("Close Bloc", role: .destructive) { bloc.close() }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("Simulates navigating away from a screen with a scoped Bloc. send() and emit() become no-ops, publishers complete, and onClose fires.")
+                }
+
                 Button {
                     withAnimation { log.clear() }
                 } label: {
@@ -301,7 +368,7 @@ private struct LifecycleLogView: View {
                         .foregroundColor(.white.opacity(0.4))
                 }
                 .buttonStyle(.plain)
-                .padding(.leading, 8)
+                .padding(.leading, 4)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -392,7 +459,10 @@ private struct LogEntryRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(entry.kind == .error ? Color.red.opacity(0.06) : Color.clear)
+        .background(
+            entry.kind == .error  ? Color.red.opacity(0.06)    :
+            entry.kind == .close  ? Color.orange.opacity(0.06) : Color.clear
+        )
         .overlay(alignment: .bottom) {
             Divider().background(Color.white.opacity(0.04))
         }

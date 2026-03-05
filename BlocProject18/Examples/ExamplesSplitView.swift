@@ -5,6 +5,7 @@
 //  Created by Sergio Fraile Carmena on 02/07/2025.
 //
 
+import Bloc
 import SwiftUI
 
 #if DEBUG
@@ -16,6 +17,8 @@ struct ExamplesSplitView: View {
     @State var selection: Examples? = nil
     @State var isConsoleViewPresenting = false
     @State private var hoveredItem: NavigationOptions? = nil
+    @State private var showClearConfirm = false
+    @State private var clearFeedback = false
     
     var body: some View {
         NavigationSplitView {
@@ -201,6 +204,51 @@ struct ExamplesSplitView: View {
             .padding(.top, 4)
             #endif
             
+            // Clear All Hydrated Storage
+            Button {
+                showClearConfirm = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: clearFeedback ? "checkmark.circle.fill" : "externaldrive.badge.minus")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(clearFeedback ? .green : .cyan.opacity(0.8))
+
+                    Text(clearFeedback ? "Storage cleared!" : "Clear Hydrated Storage")
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(clearFeedback ? .green : .white.opacity(0.7))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 9)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(clearFeedback ? Color.green.opacity(0.1) : Color.cyan.opacity(0.07))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(clearFeedback ? Color.green.opacity(0.4) : Color.cyan.opacity(0.2), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 12)
+            .confirmationDialog(
+                "Clear all hydrated state?",
+                isPresented: $showClearConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Clear & Reset All", role: .destructive) {
+                    // Reset every registered HydratedBloc to its initial state.
+                    // Using AnyHydratedBloc avoids importing concrete types here.
+                    BlocRegistry.resetAllHydratedBlocs()
+                    withAnimation { clearFeedback = true }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        withAnimation { clearFeedback = false }
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This calls resetToInitialState() on every HydratedBloc — storage is cleared and each Bloc immediately emits its initial state. Rehydration is creation-time only: this is the equivalent of starting the next session clean, applied right now.")
+            }
+
             HStack(spacing: 6) {
                 Image(systemName: "swift")
                     .font(.system(size: 12, weight: .semibold))

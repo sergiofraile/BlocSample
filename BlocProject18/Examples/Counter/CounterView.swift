@@ -45,6 +45,19 @@ struct CounterView: View {
             VStack(spacing: 50) {
                 Spacer()
                 
+                // Hydration badge
+                HStack(spacing: 6) {
+                    Image(systemName: "externaldrive.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text("HydratedBloc — state persists across launches")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                }
+                .foregroundColor(.cyan.opacity(0.7))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(Color.cyan.opacity(0.1)))
+                .overlay(Capsule().stroke(Color.cyan.opacity(0.25), lineWidth: 1))
+
                 // Counter display
                 VStack(spacing: 12) {
                     Text("COUNTER")
@@ -148,29 +161,54 @@ struct CounterView: View {
                     .buttonStyle(.plain)
                 }
                 
-                // Reset button
-                Button(action: {
-                    counterBloc.send(.reset)
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("Reset")
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                // Reset buttons
+                VStack(spacing: 10) {
+                    // Standard Bloc reset — emits 0 via event, which also persists 0
+                    Button(action: { counterBloc.send(.reset) }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.counterclockwise")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text("Reset (persists 0)")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        }
+                        .foregroundColor(.white.opacity(0.7))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule()
+                                .fill(.white.opacity(0.1))
+                                .overlay(Capsule().stroke(.white.opacity(0.2), lineWidth: 1))
+                        )
                     }
-                    .foregroundColor(.white.opacity(0.7))
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(
-                        Capsule()
-                            .fill(.white.opacity(0.1))
-                            .overlay(
-                                Capsule()
-                                    .stroke(.white.opacity(0.2), lineWidth: 1)
-                            )
-                    )
+                    .buttonStyle(.plain)
+                    .help("Sends .reset event → emits 0 → 0 is also written to UserDefaults")
+
+                    // HydratedBloc reset — clears storage AND emits initialState immediately
+                    Button(action: { counterBloc.resetToInitialState() }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "externaldrive.badge.minus")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text("Clear Stored State + Reset")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        }
+                        .foregroundColor(.cyan.opacity(0.85))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(
+                            Capsule()
+                                .fill(Color.cyan.opacity(0.08))
+                                .overlay(Capsule().stroke(Color.cyan.opacity(0.3), lineWidth: 1))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .help("Calls resetToInitialState(): deletes the UserDefaults key, then emits 0 immediately")
+
+                    Text("Increment, then quit and relaunch — the count is restored from UserDefaults.")
+                        .font(.system(size: 11, weight: .regular, design: .rounded))
+                        .foregroundColor(.white.opacity(0.3))
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 280)
                 }
-                .buttonStyle(.plain)
                 
                 Spacer()
             }

@@ -91,6 +91,11 @@ class CalculatorBloc: Bloc<CalculatorState, CalculatorEvent> {
         lifecycleLog.append(kind: .error, message: error.localizedDescription ?? "\(error)")
     }
 
+    override func onClose() {
+        super.onClose()
+        lifecycleLog.append(kind: .close, message: "Bloc closed — send() and emit() are now no-ops")
+    }
+
     // MARK: - Private Handlers
 
     private func handleDigit(_ digit: Int, emit: @escaping Emitter) {

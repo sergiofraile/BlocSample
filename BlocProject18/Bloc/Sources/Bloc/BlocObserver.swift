@@ -79,6 +79,7 @@
 /// - ``onChange(_:change:)``
 /// - ``onTransition(_:transition:)``
 /// - ``onError(_:error:)``
+/// - ``onClose(_:)``
 @MainActor
 open class BlocObserver {
 
@@ -139,4 +140,18 @@ open class BlocObserver {
     ///   - bloc: The Bloc that signalled the error.
     ///   - error: The error that was reported.
     open func onError(_ bloc: any BlocBase, error: Error) {}
+
+    /// Called when ``Bloc/close()`` is invoked on a Bloc.
+    ///
+    /// Use this hook to log teardown events or flush pending analytics:
+    ///
+    /// ```swift
+    /// override func onClose(_ bloc: any BlocBase) {
+    ///     super.onClose(bloc)
+    ///     print("🔒 \(type(of: bloc)) closed")
+    /// }
+    /// ```
+    ///
+    /// - Parameter bloc: The Bloc that was closed.
+    open func onClose(_ bloc: any BlocBase) {}
 }

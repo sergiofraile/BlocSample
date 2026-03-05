@@ -162,4 +162,26 @@ public protocol BlocBase: AnyObject {
     ///
     /// - Parameter error: The error that occurred.
     func addError(_ error: Error)
+
+    /// Closes the Bloc, cancelling subscriptions and completing all publishers.
+    ///
+    /// After `close()` returns:
+    /// - ``send(_:)`` and ``emit(_:)`` become no-ops.
+    /// - ``eventsPublisher``, ``errorsPublisher``, and ``statePublisher``
+    ///   send their completion signal to all subscribers.
+    /// - ``BlocObserver/onClose(_:)`` is called on the global observer.
+    ///
+    /// `close()` is idempotent — calling it multiple times is safe.
+    ///
+    /// When using ``BlocProvider``, blocs registered at the **App** level are
+    /// closed automatically when the application terminates. For **scoped** blocs
+    /// (e.g. tied to a sheet or a navigation destination), call `close()` in
+    /// `.onDisappear` or use a scoped `BlocProvider`:
+    ///
+    /// ```swift
+    /// .onDisappear {
+    ///     BlocRegistry.resolve(MyBloc.self).close()
+    /// }
+    /// ```
+    func close()
 }

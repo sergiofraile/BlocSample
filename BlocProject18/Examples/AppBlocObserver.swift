@@ -91,6 +91,18 @@ final class AppBlocObserver: BlocObserver {
             ]
         )
     }
+
+    override func onClose(_ bloc: any BlocBase) {
+        super.onClose(bloc)
+        LoggerStore.shared.storeMessage(
+            label: label,
+            level: .notice,
+            message: "🔒 \(type(of: bloc)) closed",
+            metadata: [
+                "blocName": .string("\(type(of: bloc))")
+            ]
+        )
+    }
 }
 
 #else

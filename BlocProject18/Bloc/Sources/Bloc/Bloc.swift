@@ -200,6 +200,12 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     @ObservationIgnored
     private var cancellables = Set<AnyCancellable>()
     
+    /// Whether this Bloc has been closed via ``close()``.
+    ///
+    /// Once `true`, ``send(_:)`` and ``emit(_:)`` are no-ops. Combine publishers
+    /// have sent their completion signal.
+    public private(set) var isClosed: Bool = false
+
     /// Holds the event being processed by ``send(_:)`` for the duration of its synchronous
     /// handler execution.
     ///
@@ -284,6 +290,7 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     ///
     /// - Parameter state: The new state to emit.
     public func emit(_ state: State) {
+        guard !isClosed else { return }
         let change = Change(currentState: self.state, nextState: state)
         if let event = currentEvent {
             onTransition(Transition(currentState: self.state, event: event, nextState: state))
@@ -404,6 +411,7 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     ///
     /// - Parameter event: The event to send.
     public func send(_ event: E) {
+        guard !isClosed else { return }
         onEvent(event)
         // Deposit the event so that any synchronous emit() call inside the handler
         // can read it to build a Transition. Cleared immediately after the handler
@@ -489,5 +497,48 @@ open class Bloc<S: BlocState, E: BlocEvent>: BlocBase {
     /// - Parameter error: The error that was signalled.
     open func onError(_ error: Error) {
         BlocObserver.shared.onError(self, error: error)
+    }
+
+    // MARK: - Lifecycle Management
+
+    /// Closes the Bloc, releasing resources and completing all Combine publishers.
+    ///
+    /// Call `close()` when a Bloc is no longer needed — typically when its
+    /// owning screen is dismissed. After calling `close()`:
+    ///
+    /// - ``send(_:)`` and ``emit(_:)`` become no-ops.
+    /// - ``eventsPublisher``, ``errorsPublisher``, and ``statePublisher``
+    ///   send their completion signal to subscribers.
+    /// - ``onClose()`` fires, which in turn calls ``BlocObserver/onClose(_:)``.
+    ///
+    /// `close()` is idempotent — repeated calls are safe.
+    ///
+    /// ``BlocProvider`` calls `close()` automatically on all registered Blocs
+    /// when the registry is deallocated (e.g. on app termination, or when a
+    /// scoped `BlocProvider` leaves the view tree).
+    public func close() {
+        guard !isClosed else { return }
+        isClosed = true
+        cancellables.removeAll()
+        eventSubject.send(completion: .finished)
+        errorSubject.send(completion: .finished)
+        onClose()
+    }
+
+    /// Called once when ``close()`` is invoked on this Bloc.
+    ///
+    /// Override to perform custom teardown — release held resources, flush
+    /// pending writes, or update UI to reflect the closed state:
+    ///
+    /// ```swift
+    /// override func onClose() {
+    ///     super.onClose()
+    ///     print("\(type(of: self)) closed")
+    /// }
+    /// ```
+    ///
+    /// Always call `super.onClose()` so ``BlocObserver/onClose(_:)`` fires.
+    open func onClose() {
+        BlocObserver.shared.onClose(self)
     }
 }

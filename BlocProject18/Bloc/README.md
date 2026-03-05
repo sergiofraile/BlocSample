@@ -19,6 +19,8 @@ A Swift implementation of the [Bloc pattern](https://bloclibrary.dev/) for build
 * [Advanced Features](#advanced-features)
   * [BlocObserver](#blocobserver)
   * [Lifecycle Hooks](#lifecycle-hooks)
+  * [Lifecycle Management (close)](#lifecycle-management-close)
+  * [HydratedBloc — State Persistence](#hydratedbloc--state-persistence)
 * [Examples](#examples)
 * [Documentation](#documentation)
 * [Installation](#installation)
@@ -801,6 +803,183 @@ class CalculatorBloc: Bloc<CalculatorState, CalculatorEvent> {
 ```
 
 > The `BlocLifecycleLog` is a simple `@Observable` class that the view observes directly — it is not part of the Bloc state. This keeps logging concerns separate from business logic.
+
+---
+
+## Lifecycle Management (close)
+
+Every `Bloc` must be closed when it is no longer needed. Closing a Bloc:
+
+- Cancels all active Combine subscriptions.
+- Completes `eventsPublisher`, `errorsPublisher`, and `statePublisher` (sends `.finished`).
+- Sets `isClosed = true`, turning `send()` and `emit()` into no-ops.
+- Fires `onClose()` on the Bloc itself, then `BlocObserver.shared.onClose(_:)`.
+
+### Calling `close()` explicitly
+
+```swift
+// When a screen is dismissed, close its Bloc
+.onDisappear {
+    BlocRegistry.resolve(SearchBloc.self).close()
+}
+```
+
+### Automatic cleanup via `BlocProvider`
+
+`BlocProvider` registers its Blocs with `BlocRegistry`. When the active registry is deallocated (app termination, or a scoped provider leaving the view tree) it calls `close()` on all registered Blocs automatically — no manual teardown required for app-level Blocs.
+
+### Detecting the closed state
+
+`isClosed` is a publicly readable, `@Observable` property on every `Bloc`. SwiftUI views that read it will update automatically:
+
+```swift
+struct MyView: View {
+    let bloc = BlocRegistry.resolve(MyBloc.self)
+
+    var body: some View {
+        if bloc.isClosed {
+            Text("Bloc has been closed")
+        } else {
+            // normal UI
+        }
+    }
+}
+```
+
+### Reacting to close in a Bloc subclass
+
+Override `onClose()` to perform custom teardown (flush a cache, write pending data, etc.). Always call `super` so `BlocObserver.onClose` fires:
+
+```swift
+class SearchBloc: Bloc<SearchState, SearchEvent> {
+
+    override func onClose() {
+        super.onClose()          // fires BlocObserver.shared.onClose(self)
+        cache.flush()
+        print("\(type(of: self)) closed")
+    }
+}
+```
+
+### Reacting to close in `BlocObserver`
+
+`BlocObserver.onClose` gives a single place to log teardown across every Bloc in the app:
+
+```swift
+class AppBlocObserver: BlocObserver {
+
+    override func onClose(_ bloc: any BlocBase) {
+        super.onClose(bloc)
+        Analytics.track("bloc_closed", properties: ["bloc": "\(type(of: bloc))"])
+    }
+}
+```
+
+### App-level vs scoped Blocs
+
+| Scope | Registration | When `close()` fires |
+|---|---|---|
+| App-level | `BlocProvider` at root | On app termination (automatic via `BlocRegistry.deinit`) |
+| Screen-scoped | Created per-screen | Call manually in `.onDisappear`, or use a scoped `BlocProvider` |
+
+> **Demo:** Open the **Calculator** example and tap the ⏹ button in the lifecycle log panel. This simulates closing a screen-scoped Bloc — you'll see the `CLOSE` event in the log, the calculator becomes non-interactive, and `BlocObserver.onClose` fires (visible in Pulse).
+
+---
+
+## HydratedBloc — State Persistence
+
+`HydratedBloc` is a `Bloc` subclass that automatically saves its state to `UserDefaults` (or any custom ``HydratedStorage`` backend) on every `emit`, and restores it the next time the Bloc is created.
+
+### Requirements
+
+The state type must conform to both `BlocState` and `Codable`:
+
+```swift
+struct SettingsState: BlocState, Codable {
+    var darkMode: Bool = false
+    var fontSize: Int = 16
+}
+```
+
+`Int`, `String`, `Bool`, and other standard library types are `Codable` out of the box, so simple counters need no extra work.
+
+### Creating a HydratedBloc
+
+```swift
+class CounterBloc: HydratedBloc<Int, CounterEvent> {
+    init() {
+        super.init(initialState: 0)  // rehydrates from UserDefaults if available
+
+        on(.increment) { [weak self] _, emit in
+            guard let self else { return }
+            emit(state + 1)           // automatically persisted
+        }
+        on(.decrement) { [weak self] _, emit in
+            guard let self else { return }
+            emit(state - 1)
+        }
+    }
+}
+```
+
+That's all. The count survives app restarts with no additional code.
+
+### Rehydration is creation-time only
+
+State is read from storage **once**, when the Bloc is initialised. There is no way to "re-pull" persisted data into a running Bloc mid-session — you have two options instead:
+
+| Method | Storage | In-memory state | Use case |
+|---|---|---|---|
+| `clearStoredState()` | Deleted | Unchanged | Wipe storage; effect visible next launch |
+| `resetToInitialState()` | Deleted then re-written with `initialState` | Set to `initialState` immediately | Instant reset without restarting |
+
+```swift
+// "Log out" — wipe storage only; user's current session is unaffected
+userBloc.clearStoredState()
+
+// "Reset" button — wipe storage AND reset the UI immediately
+counterBloc.resetToInitialState()
+```
+
+### Custom storage key
+
+By default the key is the class name (`"CounterBloc"`). Override `storageKey` to use a stable, version-safe key:
+
+```swift
+class SettingsBloc: HydratedBloc<SettingsState, SettingsEvent> {
+    override class var storageKey: String { "settings_v2" }
+}
+```
+
+### Custom storage backend
+
+Inject any ``HydratedStorage`` conformer — useful for testing with an in-memory store:
+
+```swift
+final class InMemoryStorage: HydratedStorage {
+    private var store: [String: Data] = [:]
+    func read(key: String) -> Data? { store[key] }
+    func write(key: String, value: Data) { store[key] = value }
+    func delete(key: String) { store[key] = nil }
+    func clear() { store.removeAll() }
+}
+
+// In tests
+let bloc = CounterBloc(storage: InMemoryStorage())
+```
+
+### Clearing all hydrated blocs
+
+`BlocRegistry.resetAllHydratedBlocs()` iterates every registered Bloc, resets those that conform to `AnyHydratedBloc`, and clears all `UserDefaults` keys in one call:
+
+```swift
+// Settings screen / debug button
+BlocRegistry.resetAllHydratedBlocs()
+```
+
+> **Demo:** Open the **Counter** example. The current value is persisted — quit and relaunch the app to see rehydration. Use the **"Clear Stored State + Reset"** button to wipe storage and reset the counter immediately. The **"Clear Hydrated Storage"** button in the sidebar footer resets all registered `HydratedBloc`s at once.
+
+---
 
 ## Examples
 
