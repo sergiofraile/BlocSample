@@ -89,4 +89,4 @@ BlocSwift/Suvify.plist
 
 # SUV example — private/internal example, kept locally only
 BlocSwift/Examples/SUVs/
-BlocSwift/Bloc/Tests/BlocTests/Examples/SUVExampleTests.swift
+Tests/BlocTests/Examples/SUVExampleTests.swift

@@ -1,19 +1,24 @@
 # Bloc
 
-[![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
+[![Swift 6.0](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
 [![iOS 17+](https://img.shields.io/badge/iOS-17%2B-blue.svg)](https://developer.apple.com/ios/)
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue.svg)](https://developer.apple.com/macos/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 > **iOS/Swift:** [github.com/sergiofraile/BlocSwift](https://github.com/sergiofraile/BlocSwift) · **Kotlin counterpart:** [github.com/sergiofraile/BlocKotlin](https://github.com/sergiofraile/BlocKotlin)
 
 A Swift implementation of the [Bloc pattern](https://bloclibrary.dev/) for building applications in a consistent and understandable way, with composition, testing, and ergonomics in mind.
+
+> **Inspired by the [Dart Bloc library](https://bloclibrary.dev)** — this is a Swift port of the [bloc](https://pub.dev/packages/bloc) package originally created by Felix Angelov for Flutter/Dart. The same proven, event-driven state management pattern that powers thousands of Flutter apps worldwide, brought natively to Swift.
 
 * [What is Bloc?](#what-is-bloc)
 * [Getting Started](#getting-started)
 * [Core Concepts](#core-concepts)
 * [Basic Usage](#basic-usage)
 * [Examples](#examples)
+  * [Counter](#-counter-example)
+  * [Formula One](#-formula-one-example)
+  * [Lorcana](#-lorcana-example)
 * [Documentation](#documentation)
 * [Installation](#installation)
 * [Requirements](#requirements)
@@ -29,24 +34,72 @@ The pattern is built around three core principles:
 2. **Single Source of Truth**: The Bloc holds the authoritative state
 3. **Predictable State Changes**: State can only change in response to events
 
+### Data Flow
+
+```mermaid
+flowchart LR
+    subgraph View["🖥️ View Layer"]
+        UI["SwiftUI View"]
+        Builder["BlocBuilder"]
+    end
+
+    subgraph BlocLayer["🧠 Bloc"]
+        direction LR
+        Event(["Event"])
+        Handler["Event Handler"]
+        Emit["emit(state)"]
+        Event --> Handler --> Emit
+    end
+
+    UI -->|"send(event)"| Event
+    Emit -->|"new state"| Builder
+    Builder -->|"rebuilds"| UI
+
+    style Event fill:#f9a825,stroke:#f57f17,color:#000
+    style Emit fill:#4caf50,stroke:#388e3c,color:#fff
+    style Handler fill:#2196f3,stroke:#1976d2,color:#fff
 ```
-┌─────────────────────────────────────────────────────────┐
-│                         View                            │
-│                                                         │
-│   ┌─────────────┐                    ┌──────────────┐   │
-│   │   Button    │────send(event)────▶│  bloc.state  │   │
-│   └─────────────┘                    └──────────────┘   │
-│                                             ▲           │
-└─────────────────────────────────────────────│───────────┘
-                                              │
-┌─────────────────────────────────────────────│───────────┐
-│                        Bloc                 │           │
-│                                             │           │
-│   ┌─────────────┐    ┌──────────────┐    ┌──┴───────┐   │
-│   │    Event    │───▶│   Handler    │───▶│  emit()  │   │
-│   └─────────────┘    └──────────────┘    └──────────┘   │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+
+### Lifecycle Hooks
+
+Every state change follows a predictable sequence of lifecycle hooks — ideal for logging, analytics, or debugging:
+
+```mermaid
+sequenceDiagram
+    participant V as View
+    participant B as Bloc
+    participant H as Handler
+
+    V->>B: send(.increment)
+    Note over B: onEvent(.increment)
+    B->>H: dispatch to handler
+    H->>B: emit(state + 1)
+    Note over B: onTransition(currentState, event, nextState)
+    Note over B: onChange(currentState → nextState)
+    B-->>V: state updated → auto rebuild
+```
+
+### Cubit — Lightweight Alternative
+
+For simpler state logic that doesn't need an event audit trail, use a `Cubit` with direct method calls instead:
+
+```mermaid
+flowchart LR
+    subgraph View["🖥️ View Layer"]
+        UI["SwiftUI View"]
+    end
+
+    subgraph CubitLayer["🧠 Cubit"]
+        Method["Public Method\n(e.g. increment())"]
+        Emit["emit(state)"]
+        Method --> Emit
+    end
+
+    UI -->|"cubit.increment()"| Method
+    Emit -->|"new state"| UI
+
+    style Method fill:#9c27b0,stroke:#7b1fa2,color:#fff
+    style Emit fill:#4caf50,stroke:#388e3c,color:#fff
 ```
 
 ## Getting Started
@@ -354,7 +407,7 @@ counterBloc.statePublisher
 
 ## Examples
 
-The project includes three example implementations that demonstrate different complexity levels:
+The project includes example implementations that demonstrate different complexity levels:
 
 ### 🔢 Counter Example
 
@@ -406,76 +459,6 @@ case .error(let error):
 - Use enum states for mutually exclusive UI modes
 - Emit `.loading` immediately before async work
 - Pattern match on state for declarative UI
-
-### 🔐 Login Example
-
-A comprehensive authentication example demonstrating dependency injection and the repository pattern:
-
-| Aspect | Details |
-|--------|---------|
-| **State** | `enum` with cases: `initial`, `loading`, `success(token)`, `error(LoginError)` |
-| **Events** | `login(email, password)`, `logout` |
-| **Patterns** | Repository pattern, dependency injection, protocol-based networking, comprehensive error handling |
-
-**Location:** `BlocSwift/Examples/Login/`
-
-```swift
-// Protocol-based repository for testability
-protocol LoginRepositoryProtocol: Sendable {
-    func login(email: String, password: String) async throws -> String
-}
-
-// Bloc depends on abstraction, not concrete type
-@MainActor
-class LoginBloc: Bloc<LoginState, LoginEvent> {
-    private let repository: LoginRepositoryProtocol
-    
-    init(repository: LoginRepositoryProtocol) {
-        self.repository = repository
-        super.init(initialState: .initial)
-    }
-    
-    override func mapEventToState(event: LoginEvent, emit: @escaping Emitter) {
-        switch event {
-        case .login(let email, let password):
-            emit(.loading)
-            Task { await performLogin(email: email, password: password) }
-        case .logout:
-            emit(.initial)
-        }
-    }
-}
-
-// Production usage
-LoginBloc(repository: LoginNetworkService())
-
-// Testing usage
-let mockRepo = MockLoginRepository()
-mockRepo.mockResult = .success("test-token")
-LoginBloc(repository: mockRepo)
-```
-
-**Key Learnings:**
-- Use protocols to abstract dependencies (Dependency Inversion Principle)
-- Inject dependencies via initializer for testability
-- Create mock implementations for unit testing
-- Handle multiple error cases with custom error types
-- Validate inputs before making network requests
-
-**File Structure:**
-```
-Login/
-├── Blocs/
-│   ├── LoginBloc.swift       # Business logic
-│   ├── LoginEvent.swift      # Events with associated values
-│   └── LoginState.swift      # Enum-based states
-├── Models/
-│   └── LoginError.swift      # Custom error type
-├── LoginRepository.swift      # Protocol (abstraction)
-├── LoginNetworkService.swift  # Production implementation
-├── MockLoginRepository.swift  # Test mock
-└── LoginView.swift            # SwiftUI view
-```
 
 ### ✨ Lorcana Example
 
@@ -593,7 +576,7 @@ This library is inspired by:
 
 ## License
 
-This library is released under the MIT license. See [LICENSE](LICENSE) for details.
+This library is released under the Apache 2.0 license. See [LICENSE](LICENSE) for details.
 
 ---
 
