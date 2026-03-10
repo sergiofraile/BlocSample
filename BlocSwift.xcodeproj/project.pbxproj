@@ -20,37 +20,37 @@
 			containerPortal = 52F76E272E4364F600FE6118 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 52F76E2E2E4364F600FE6118;
-			remoteInfo = BlocProject18;
+			remoteInfo = BlocSwift;
 		};
 		52F76E472E4364FA00FE6118 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 52F76E272E4364F600FE6118 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 52F76E2E2E4364F600FE6118;
-			remoteInfo = BlocProject18;
+			remoteInfo = BlocSwift;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		52F76E2F2E4364F600FE6118 /* BlocProject18.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BlocProject18.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		52F76E3C2E4364FA00FE6118 /* BlocProject18Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BlocProject18Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		52F76E462E4364FA00FE6118 /* BlocProject18UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BlocProject18UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		52F76E2F2E4364F600FE6118 /* BlocSwift.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BlocSwift.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		52F76E3C2E4364FA00FE6118 /* BlocSwiftTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BlocSwiftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		52F76E462E4364FA00FE6118 /* BlocSwiftUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BlocSwiftUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		52F76E312E4364F600FE6118 /* BlocProject18 */ = {
+		52F76E312E4364F600FE6118 /* BlocSwift */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = BlocProject18;
+			path = BlocSwift;
 			sourceTree = "<group>";
 		};
-		52F76E3F2E4364FA00FE6118 /* BlocProject18Tests */ = {
+		52F76E3F2E4364FA00FE6118 /* BlocSwiftTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = BlocProject18Tests;
+			path = BlocSwiftTests;
 			sourceTree = "<group>";
 		};
-		52F76E492E4364FA00FE6118 /* BlocProject18UITests */ = {
+		52F76E492E4364FA00FE6118 /* BlocSwiftUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = BlocProject18UITests;
+			path = BlocSwiftUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -88,9 +88,9 @@
 		52F76E262E4364F600FE6118 = {
 			isa = PBXGroup;
 			children = (
-				52F76E312E4364F600FE6118 /* BlocProject18 */,
-				52F76E3F2E4364FA00FE6118 /* BlocProject18Tests */,
-				52F76E492E4364FA00FE6118 /* BlocProject18UITests */,
+				52F76E312E4364F600FE6118 /* BlocSwift */,
+				52F76E3F2E4364FA00FE6118 /* BlocSwiftTests */,
+				52F76E492E4364FA00FE6118 /* BlocSwiftUITests */,
 				52F76E302E4364F600FE6118 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -98,9 +98,9 @@
 		52F76E302E4364F600FE6118 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				52F76E2F2E4364F600FE6118 /* BlocProject18.app */,
-				52F76E3C2E4364FA00FE6118 /* BlocProject18Tests.xctest */,
-				52F76E462E4364FA00FE6118 /* BlocProject18UITests.xctest */,
+				52F76E2F2E4364F600FE6118 /* BlocSwift.app */,
+				52F76E3C2E4364FA00FE6118 /* BlocSwiftTests.xctest */,
+				52F76E462E4364FA00FE6118 /* BlocSwiftUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,9 +108,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		52F76E2E2E4364F600FE6118 /* BlocProject18 */ = {
+		52F76E2E2E4364F600FE6118 /* BlocSwift */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 52F76E502E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocProject18" */;
+			buildConfigurationList = 52F76E502E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocSwift" */;
 			buildPhases = (
 				52F76E2B2E4364F600FE6118 /* Sources */,
 				52F76E2C2E4364F600FE6118 /* Frameworks */,
@@ -121,9 +121,9 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				52F76E312E4364F600FE6118 /* BlocProject18 */,
+				52F76E312E4364F600FE6118 /* BlocSwift */,
 			);
-			name = BlocProject18;
+			name = BlocSwift;
 			packageProductDependencies = (
 				52F7820F2E4365F900FE6118 /* Alamofire */,
 				52F782142E43661200FE6118 /* Pulse */,
@@ -131,13 +131,13 @@
 				52F782182E43661200FE6118 /* PulseUI */,
 				52F7821B2E43662700FE6118 /* Bloc */,
 			);
-			productName = BlocProject18;
-			productReference = 52F76E2F2E4364F600FE6118 /* BlocProject18.app */;
+			productName = BlocSwift;
+			productReference = 52F76E2F2E4364F600FE6118 /* BlocSwift.app */;
 			productType = "com.apple.product-type.application";
 		};
-		52F76E3B2E4364FA00FE6118 /* BlocProject18Tests */ = {
+		52F76E3B2E4364FA00FE6118 /* BlocSwiftTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 52F76E532E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocProject18Tests" */;
+			buildConfigurationList = 52F76E532E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocSwiftTests" */;
 			buildPhases = (
 				52F76E382E4364FA00FE6118 /* Sources */,
 				52F76E392E4364FA00FE6118 /* Frameworks */,
@@ -149,18 +149,18 @@
 				52F76E3E2E4364FA00FE6118 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				52F76E3F2E4364FA00FE6118 /* BlocProject18Tests */,
+				52F76E3F2E4364FA00FE6118 /* BlocSwiftTests */,
 			);
-			name = BlocProject18Tests;
+			name = BlocSwiftTests;
 			packageProductDependencies = (
 			);
-			productName = BlocProject18Tests;
-			productReference = 52F76E3C2E4364FA00FE6118 /* BlocProject18Tests.xctest */;
+			productName = BlocSwiftTests;
+			productReference = 52F76E3C2E4364FA00FE6118 /* BlocSwiftTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		52F76E452E4364FA00FE6118 /* BlocProject18UITests */ = {
+		52F76E452E4364FA00FE6118 /* BlocSwiftUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 52F76E562E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocProject18UITests" */;
+			buildConfigurationList = 52F76E562E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocSwiftUITests" */;
 			buildPhases = (
 				52F76E422E4364FA00FE6118 /* Sources */,
 				52F76E432E4364FA00FE6118 /* Frameworks */,
@@ -172,13 +172,13 @@
 				52F76E482E4364FA00FE6118 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				52F76E492E4364FA00FE6118 /* BlocProject18UITests */,
+				52F76E492E4364FA00FE6118 /* BlocSwiftUITests */,
 			);
-			name = BlocProject18UITests;
+			name = BlocSwiftUITests;
 			packageProductDependencies = (
 			);
-			productName = BlocProject18UITests;
-			productReference = 52F76E462E4364FA00FE6118 /* BlocProject18UITests.xctest */;
+			productName = BlocSwiftUITests;
+			productReference = 52F76E462E4364FA00FE6118 /* BlocSwiftUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -204,7 +204,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 52F76E2A2E4364F600FE6118 /* Build configuration list for PBXProject "BlocProject18" */;
+			buildConfigurationList = 52F76E2A2E4364F600FE6118 /* Build configuration list for PBXProject "BlocSwift" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -216,16 +216,16 @@
 			packageReferences = (
 				52F7820E2E4365F900FE6118 /* XCRemoteSwiftPackageReference "Alamofire" */,
 				52F782132E43661200FE6118 /* XCRemoteSwiftPackageReference "Pulse" */,
-				52F7821A2E43662700FE6118 /* XCLocalSwiftPackageReference "BlocProject18/Bloc" */,
+				52F7821A2E43662700FE6118 /* XCLocalSwiftPackageReference "BlocSwift/Bloc" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 52F76E302E4364F600FE6118 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				52F76E2E2E4364F600FE6118 /* BlocProject18 */,
-				52F76E3B2E4364FA00FE6118 /* BlocProject18Tests */,
-				52F76E452E4364FA00FE6118 /* BlocProject18UITests */,
+				52F76E2E2E4364F600FE6118 /* BlocSwift */,
+				52F76E3B2E4364FA00FE6118 /* BlocSwiftTests */,
+				52F76E452E4364FA00FE6118 /* BlocSwiftUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -281,12 +281,12 @@
 /* Begin PBXTargetDependency section */
 		52F76E3E2E4364FA00FE6118 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 52F76E2E2E4364F600FE6118 /* BlocProject18 */;
+			target = 52F76E2E2E4364F600FE6118 /* BlocSwift */;
 			targetProxy = 52F76E3D2E4364FA00FE6118 /* PBXContainerItemProxy */;
 		};
 		52F76E482E4364FA00FE6118 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 52F76E2E2E4364F600FE6118 /* BlocProject18 */;
+			target = 52F76E2E2E4364F600FE6118 /* BlocSwift */;
 			targetProxy = 52F76E472E4364FA00FE6118 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -420,9 +420,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RA662LA7JS;
+				DEVELOPMENT_TEAM = AHW962AJ8Q;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -436,8 +437,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocProject18;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocSwift;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -449,9 +451,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RA662LA7JS;
+				DEVELOPMENT_TEAM = AHW962AJ8Q;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -465,8 +468,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocProject18;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocSwift;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -477,18 +481,20 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RA662LA7JS;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocProject18Tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocSwiftTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BlocProject18.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BlocProject18";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BlocSwift.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BlocSwift";
 			};
 			name = Debug;
 		};
@@ -496,18 +502,20 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RA662LA7JS;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocProject18Tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocSwiftTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BlocProject18.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BlocProject18";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BlocSwift.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BlocSwift";
 			};
 			name = Release;
 		};
@@ -519,12 +527,12 @@
 				DEVELOPMENT_TEAM = RA662LA7JS;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocProject18UITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocSwiftTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = BlocProject18;
+				TEST_TARGET_NAME = BlocSwift;
 			};
 			name = Debug;
 		};
@@ -536,19 +544,19 @@
 				DEVELOPMENT_TEAM = RA662LA7JS;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocProject18UITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sergiofraile.BlocSwiftTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = BlocProject18;
+				TEST_TARGET_NAME = BlocSwift;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		52F76E2A2E4364F600FE6118 /* Build configuration list for PBXProject "BlocProject18" */ = {
+		52F76E2A2E4364F600FE6118 /* Build configuration list for PBXProject "BlocSwift" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				52F76E4E2E4364FA00FE6118 /* Debug */,
@@ -557,7 +565,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		52F76E502E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocProject18" */ = {
+		52F76E502E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocSwift" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				52F76E512E4364FA00FE6118 /* Debug */,
@@ -566,7 +574,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		52F76E532E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocProject18Tests" */ = {
+		52F76E532E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocSwiftTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				52F76E542E4364FA00FE6118 /* Debug */,
@@ -575,7 +583,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		52F76E562E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocProject18UITests" */ = {
+		52F76E562E4364FA00FE6118 /* Build configuration list for PBXNativeTarget "BlocSwiftUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				52F76E572E4364FA00FE6118 /* Debug */,
@@ -587,9 +595,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		52F7821A2E43662700FE6118 /* XCLocalSwiftPackageReference "BlocProject18/Bloc" */ = {
+		52F7821A2E43662700FE6118 /* XCLocalSwiftPackageReference "BlocSwift/Bloc" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = BlocProject18/Bloc;
+			relativePath = BlocSwift/Bloc;
 		};
 /* End XCLocalSwiftPackageReference section */
 
