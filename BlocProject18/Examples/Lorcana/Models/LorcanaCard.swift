@@ -1,6 +1,6 @@
 //
 //  LorcanaCard.swift
-//  BlocProject18
+//  BlocSwift
 //
 //  Created by Cursor on 19/01/2026.
 //

@@ -1,6 +1,6 @@
 // HeartbeatExampleTests.swift
 //
-// Faithful inline replica of the Heartbeat example from BlocProject18/Examples/Heartbeat.
+// Faithful inline replica of the Heartbeat example from BlocSwift/Examples/Heartbeat.
 //
 // HeartbeatBloc demonstrates **scoped lifecycle management**: the view creates
 // the Bloc itself and calls close() in onDisappear. The tests here verify:

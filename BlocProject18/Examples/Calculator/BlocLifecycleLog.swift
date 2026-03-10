@@ -1,6 +1,6 @@
 //
 //  BlocLifecycleLog.swift
-//  BlocProject18
+//  BlocSwift
 //
 
 import Foundation

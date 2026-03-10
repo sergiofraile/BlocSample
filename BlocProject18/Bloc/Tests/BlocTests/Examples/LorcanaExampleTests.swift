@@ -1,6 +1,6 @@
 // LorcanaExampleTests.swift
 //
-// Faithful inline replica of the Lorcana example from BlocProject18/Examples/Lorcana.
+// Faithful inline replica of the Lorcana example from BlocSwift/Examples/Lorcana.
 //
 // LorcanaBloc is the most feature-rich Bloc in the project:
 //   - Dependency injection via LorcanaNetworkServiceProtocol

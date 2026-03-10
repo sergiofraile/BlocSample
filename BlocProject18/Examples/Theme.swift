@@ -1,6 +1,6 @@
 //
 //  Theme.swift
-//  BlocProject18
+//  BlocSwift
 //
 //  Central design-token registry for the Bloc Examples project.
 //

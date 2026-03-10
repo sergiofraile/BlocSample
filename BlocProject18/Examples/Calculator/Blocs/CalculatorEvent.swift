@@ -1,6 +1,6 @@
 //
 //  CalculatorEvent.swift
-//  BlocProject18
+//  BlocSwift
 //
 
 import Bloc

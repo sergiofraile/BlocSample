@@ -1,6 +1,6 @@
 // FormulaOneExampleTests.swift
 //
-// Faithful inline replica of the FormulaOne example from BlocProject18/Examples/FormulaOne.
+// Faithful inline replica of the FormulaOne example from BlocSwift/Examples/FormulaOne.
 //
 // The real FormulaOneBloc uses a concrete FormulaOneNetworkService with no
 // dependency injection, making it hard to unit-test the async path.

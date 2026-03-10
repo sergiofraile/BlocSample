@@ -85,4 +85,11 @@ iOSInjectionProject/
 # SUVify API Configuration
 # Contains sensitive API keys - do not commit!
 # Use Suvify.plist.example as a template
+BlocSwift/Suvify.plist
 BlocProject18/Suvify.plist
+
+# SUV example — private/internal example, kept locally only
+BlocProject18/Examples/SUVs/
+BlocSwift/Examples/SUVs/
+BlocProject18/Bloc/Tests/BlocTests/Examples/SUVExampleTests.swift
+BlocSwift/Bloc/Tests/BlocTests/Examples/SUVExampleTests.swift

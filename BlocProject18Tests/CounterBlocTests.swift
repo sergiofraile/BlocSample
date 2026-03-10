@@ -1,13 +1,13 @@
 //
 //  CounterBlocTests.swift
-//  BlocProject18Tests
+//  BlocSwiftTests
 //
 //  Created by Sergio Fraile on 19/01/2026.
 //
 
 import Testing
 import Combine
-@testable import BlocProject18
+@testable import BlocSwift
 
 /// Tests for `CounterBloc` following the Bloc pattern testing best practices.
 ///

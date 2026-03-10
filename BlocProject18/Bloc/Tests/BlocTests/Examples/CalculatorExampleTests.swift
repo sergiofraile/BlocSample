@@ -1,6 +1,6 @@
 // CalculatorExampleTests.swift
 //
-// Faithful inline replica of the Calculator example from BlocProject18/Examples/Calculator.
+// Faithful inline replica of the Calculator example from BlocSwift/Examples/Calculator.
 //
 // CalculatorBloc is a good demonstration that even a multi-handler, error-emitting
 // Bloc remains straightforward to test: create the Bloc, send events, assert on

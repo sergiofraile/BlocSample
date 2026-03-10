@@ -1,6 +1,6 @@
 //
-//  BlocProject18App.swift
-//  BlocProject18
+//  BlocSwiftApp.swift
+//  BlocSwift
 //
 //  Created by Sergio Fraile Carmena on 06/08/2025.
 //
@@ -12,7 +12,7 @@ import PulseProxy
 import PulseUI
 
 @main
-struct BlocProject18App: App {
+struct BlocSwiftApp: App {
 
     // Blocs and Cubits are stored as properties so they survive body re-evaluations.
     // Declaring them inside body would create fresh instances on every render,
@@ -21,7 +21,6 @@ struct BlocProject18App: App {
     private let calculatorBloc = CalculatorBloc()
     private let formulaOneBloc = FormulaOneBloc()
     private let lorcanaBloc    = LorcanaBloc(networkService: LorcanaNetworkService())
-    private let suvBloc        = SUVBloc()
     private let scoreBloc      = ScoreBloc()
     private let timerCubit     = TimerCubit()
 
@@ -34,7 +33,7 @@ struct BlocProject18App: App {
 
     var body: some Scene {
         WindowGroup {
-            BlocProvider(with: [counterBloc, calculatorBloc, formulaOneBloc, lorcanaBloc, suvBloc, scoreBloc, timerCubit]) {
+            BlocProvider(with: [counterBloc, calculatorBloc, formulaOneBloc, lorcanaBloc, scoreBloc, timerCubit]) {
                 ExamplesSplitView()
                     .frame(minWidth: 375.0, minHeight: 600.0)
             }

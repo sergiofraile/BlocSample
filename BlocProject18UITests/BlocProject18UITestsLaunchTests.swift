@@ -1,13 +1,13 @@
 //
-//  BlocProject18UITestsLaunchTests.swift
-//  BlocProject18UITests
+//  BlocSwiftUITestsLaunchTests.swift
+//  BlocSwiftUITests
 //
 //  Created by Sergio Fraile Carmena on 06/08/2025.
 //
 
 import XCTest
 
-final class BlocProject18UITestsLaunchTests: XCTestCase {
+final class BlocSwiftUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

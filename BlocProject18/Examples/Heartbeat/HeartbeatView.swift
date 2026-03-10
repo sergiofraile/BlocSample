@@ -1,6 +1,6 @@
 //
 //  HeartbeatView.swift
-//  BlocProject18
+//  BlocSwift
 //
 //  Demonstrates **scoped Bloc lifecycle management**.
 //

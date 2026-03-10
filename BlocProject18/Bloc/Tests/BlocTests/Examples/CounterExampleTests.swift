@@ -1,6 +1,6 @@
 // CounterExampleTests.swift
 //
-// Faithful inline replica of the Counter example from BlocProject18/Examples/Counter.
+// Faithful inline replica of the Counter example from BlocSwift/Examples/Counter.
 //
 // The real CounterBloc is a HydratedBloc<Int, CounterEvent>, so it persists
 // the count across app launches. These tests use InMemoryStorage to keep the

@@ -1,6 +1,6 @@
 //
 //  CalculatorState.swift
-//  BlocProject18
+//  BlocSwift
 //
 
 /// The state managed by ``CalculatorBloc``.

@@ -3,7 +3,9 @@
 [![Swift 5.9](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
 [![iOS 17+](https://img.shields.io/badge/iOS-17%2B-blue.svg)](https://developer.apple.com/ios/)
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue.svg)](https://developer.apple.com/macos/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
+> **iOS/Swift:** [github.com/sergiofraile/BlocSwift](https://github.com/sergiofraile/BlocSwift) · **Kotlin counterpart:** [github.com/sergiofraile/BlocKotlin](https://github.com/sergiofraile/BlocKotlin)
 
 A Swift implementation of the [Bloc pattern](https://bloclibrary.dev/) for building applications in a consistent and understandable way, with composition, testing, and ergonomics in mind.
 
@@ -1517,7 +1519,7 @@ Both predicates default to `nil`, which means they always trigger — making
 
 ## Examples
 
-The project includes eight example implementations that demonstrate different complexity levels:
+The project includes seven example implementations that demonstrate different complexity levels:
 
 ### 🎮 Score Board Example
 
@@ -1677,100 +1679,6 @@ Login/
 ├── MockLoginRepository.swift  # Test mock
 └── LoginView.swift            # SwiftUI view
 ```
-
-### 🖥️ SUVs Example
-
-A comprehensive example demonstrating enterprise-level architecture with authentication flow, repository pattern, and protocol-based networking:
-
-| Aspect | Details |
-|--------|---------|
-| **State** | `enum` with cases: `initial`, `authenticating`, `authenticated(user)`, `loadingInstances`, `loaded(user, instances)`, `extending`, `error` |
-| **Events** | `login(username, password)`, `logout`, `fetchInstances`, `refreshInstances`, `extendInstance(id, hours)`, `selectInstance` |
-| **Patterns** | Repository pattern, dependency injection, protocol-based network layer, complex state machine, Active Directory auth |
-
-**Location:** `Examples/SUVs/`
-
-```swift
-// Protocol-based network service for testability
-public protocol SUVNetworkServiceProtocol: Sendable {
-    func login(username: String, password: String, clientKey: String) async throws -> SuvActiveDirectoryUser
-    func fetchInstances(for username: String, authToken: String) async throws -> [SuvInstance]
-    func extendInstance(instanceId: String, newStopTime: String, authToken: String) async throws -> SuvInstance
-}
-
-// Repository abstracts data access
-public protocol SUVRepositoryProtocol: Sendable {
-    func login(username: String, password: String) async throws -> SuvActiveDirectoryUser
-    func fetchInstances(for username: String, authToken: String) async throws -> [SuvInstance]
-    func extendInstance(instanceId: String, hours: Int, authToken: String) async throws -> SuvInstance
-}
-
-// Bloc with dependency injection
-@MainActor
-class SUVBloc: Bloc<SUVState, SUVEvent> {
-    private let repository: SUVRepositoryProtocol
-    
-    init(
-        initialState: SUVState = .initial,
-        repository: SUVRepositoryProtocol = SUVRepository()
-    ) {
-        self.repository = repository
-        super.init(initialState: initialState)
-        registerHandlers()
-    }
-    
-    override func mapEventToState(event: SUVEvent, emit: @escaping Emitter) {
-        switch event {
-        case .login(let username, let password):
-            emit(.authenticating)
-            Task { await performLogin(username: username, password: password, emit: emit) }
-        case .extendInstance(let instanceId, let hours):
-            handleExtendInstance(instanceId: instanceId, hours: hours, emit: emit)
-        // ... other events
-        }
-    }
-}
-
-// Testing with mock repository
-let mockRepo = MockSUVRepository()
-mockRepo.mockInstances = [SuvInstance(...)]
-let testBloc = SUVBloc(repository: mockRepo)
-```
-
-**Key Learnings:**
-- **Layered Architecture**: Network → Repository → Bloc → View
-- **Protocol-Based Design**: Both network service and repository are protocol-based for testability
-- **Complex State Machine**: Multi-step flow from login → authenticated → loading → loaded
-- **Automatic Flow**: Login automatically triggers instance fetching
-- **Mock Support**: `MockSUVRepository` included for testing and previews
-- **Error Handling**: Separate auth errors from general errors for better UX
-
-**File Structure:**
-```
-SUVs/
-├── Blocs/
-│   ├── SUVBloc.swift          # Business logic with DI
-│   ├── SUVEvent.swift         # Events with associated values
-│   └── SUVState.swift         # Complex state machine
-├── Models/
-│   ├── SuvActiveDirectoryUser.swift  # Auth response model
-│   ├── SuvInstance.swift             # Instance model with state enum
-│   ├── SuvErrorResponse.swift        # API error model
-│   └── SuvifyError.swift             # Custom error type
-├── Repository/
-│   ├── SUVRepositoryProtocol.swift   # Repository abstraction
-│   ├── SUVRepository.swift           # Production implementation
-│   └── MockSUVRepository.swift       # Test mock
-├── Services/
-│   ├── SUVNetworkServiceProtocol.swift  # Network abstraction
-│   └── SUVNetworkService.swift          # URLSession implementation
-└── SUVView.swift              # SwiftUI view with login + list
-```
-
-**API Integration:**
-- **Authentication**: `POST https://narada.inday.io/narada/token` with AD credentials
-- **Instances**: `GET https://api-suv.megaleo.com/suvapi/instances/users/{username}`
-- **Extend**: `PUT https://api-suv.megaleo.com/suvapi/instances/{instanceId}`
 
 ### ✨ Lorcana Example
 
@@ -2027,15 +1935,15 @@ Timer/
 
 1. **Clone or open the repo**
    ```bash
-   git clone <repo-url>
-   open BlocProject18/BlocProject18.xcodeproj
+   git clone https://github.com/sergiofraile/BlocSwift.git
+   open BlocSwift/BlocSwift.xcodeproj
    ```
 
-2. **Select a scheme/target** — the `BlocProject18` scheme runs as a macOS app (optimised for split-view). You can also run it on an iOS simulator.
+2. **Select a scheme/target** — the `BlocSwift` scheme runs as a macOS app (optimised for split-view). You can also run it on an iOS simulator.
 
 3. **Build & Run** — press `⌘R` or **Product → Run**.
 
-4. **Explore examples** from the sidebar. Each example is self-contained; Blocs and Cubits are registered in `BlocProject18App.swift`.
+4. **Explore examples** from the sidebar. Each example is self-contained; Blocs and Cubits are registered in `BlocSwiftApp.swift`.
 
 ### Debugging with Pulse
 
@@ -2055,7 +1963,6 @@ The app ships with [Pulse](https://github.com/kean/Pulse) in `DEBUG` builds. Eve
 | **Heartbeat** | `Examples/Heartbeat/` | Scoped `Bloc`, `close()` on screen dismiss |
 | **Score Board** | `Examples/Score/` | `BlocListener` side-effects, `BlocConsumer` (rebuild + animation), `buildWhen` |
 | **Formula One** | `Examples/FormulaOne/` | Async API fetching, loading/error state, remote data |
-| **SUVs** | `Examples/SUVs/` | Complex state machine, authentication flow, Repository pattern |
 | **Lorcana** | `Examples/Lorcana/` | Search + `.debounce` transformer, infinite scroll, `BlocSelector`, multi-screen navigation |
 
 ## Documentation
@@ -2110,7 +2017,7 @@ This library is inspired by:
 
 ## License
 
-This library is released under the MIT license. See [LICENSE](LICENSE) for details.
+This library is released under the Apache License 2.0. See [LICENSE](LICENSE) for details.
 
 ---
 

@@ -5,6 +5,8 @@
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue.svg)](https://developer.apple.com/macos/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> **iOS/Swift:** [github.com/sergiofraile/BlocSwift](https://github.com/sergiofraile/BlocSwift) · **Kotlin counterpart:** [github.com/sergiofraile/BlocKotlin](https://github.com/sergiofraile/BlocKotlin)
+
 A Swift implementation of the [Bloc pattern](https://bloclibrary.dev/) for building applications in a consistent and understandable way, with composition, testing, and ergonomics in mind.
 
 * [What is Bloc?](#what-is-bloc)
@@ -352,7 +354,7 @@ counterBloc.statePublisher
 
 ## Examples
 
-The project includes four example implementations that demonstrate different complexity levels:
+The project includes three example implementations that demonstrate different complexity levels:
 
 ### 🔢 Counter Example
 
@@ -364,7 +366,7 @@ A simple counter that demonstrates the fundamentals:
 | **Events** | `increment`, `decrement`, `reset` |
 | **Patterns** | Basic event handlers with `on(_:handler:)` |
 
-**Location:** `BlocProject18/Examples/Counter/`
+**Location:** `BlocSwift/Examples/Counter/`
 
 ```swift
 // Simple state access
@@ -384,7 +386,7 @@ A more complex example with async operations and enum-based states:
 | **Events** | `loadChampionship`, `clear` |
 | **Patterns** | Async network calls, `mapEventToState`, state-driven UI |
 
-**Location:** `BlocProject18/Examples/FormulaOne/`
+**Location:** `BlocSwift/Examples/FormulaOne/`
 
 ```swift
 // State-driven UI with switch
@@ -415,7 +417,7 @@ A comprehensive authentication example demonstrating dependency injection and th
 | **Events** | `login(email, password)`, `logout` |
 | **Patterns** | Repository pattern, dependency injection, protocol-based networking, comprehensive error handling |
 
-**Location:** `BlocProject18/Examples/Login/`
+**Location:** `BlocSwift/Examples/Login/`
 
 ```swift
 // Protocol-based repository for testability
@@ -475,24 +477,6 @@ Login/
 └── LoginView.swift            # SwiftUI view
 ```
 
-### 🖥️ SUVs Example
-
-A comprehensive example demonstrating enterprise-level architecture with authentication flow, repository pattern, and protocol-based networking:
-
-| Aspect | Details |
-|--------|---------|
-| **State** | `enum` with cases: `initial`, `authenticating`, `authenticated(user)`, `loadingInstances`, `loaded(user, instances)`, `extending`, `error` |
-| **Events** | `login(username, password)`, `logout`, `fetchInstances`, `refreshInstances`, `extendInstance(id, hours)`, `selectInstance` |
-| **Patterns** | Repository pattern, dependency injection, protocol-based network layer, complex state machine, Active Directory auth |
-
-**Location:** `BlocProject18/Examples/SUVs/`
-
-**Key Learnings:**
-- **Layered Architecture**: Network → Repository → Bloc → View
-- **Protocol-Based Design**: Both network service and repository are protocol-based for testability
-- **Complex State Machine**: Multi-step flow from login → authenticated → loading → loaded
-- **Mock Support**: `MockSUVRepository` included for testing and previews
-
 ### ✨ Lorcana Example
 
 A comprehensive trading card game browser demonstrating search, pagination with infinite scroll, and multi-screen navigation:
@@ -503,7 +487,7 @@ A comprehensive trading card game browser demonstrating search, pagination with 
 | **Events** | `fetchAllCards`, `search(query)`, `loadNextPage`, `loadSet(name)`, `clear` |
 | **Patterns** | Debounced search, infinite scroll pagination, async image loading, multi-screen navigation, ink color theming |
 
-**Location:** `BlocProject18/Examples/Lorcana/`
+**Location:** `BlocSwift/Examples/Lorcana/`
 
 ```swift
 // State with pagination support
@@ -577,7 +561,7 @@ Add Bloc to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(path: "BlocProject18/Bloc")  // Local package
+    .package(url: "https://github.com/sergiofraile/BlocSwift.git", from: "1.0.0")
     // Or from a repository:
     // .package(url: "https://github.com/user/Bloc.git", from: "1.0.0")
 ]

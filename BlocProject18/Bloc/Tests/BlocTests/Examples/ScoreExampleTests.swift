@@ -1,6 +1,6 @@
 // ScoreExampleTests.swift
 //
-// Faithful inline replica of the Score example from BlocProject18/Examples/Score.
+// Faithful inline replica of the Score example from BlocSwift/Examples/Score.
 //
 // In the real app, ScoreBloc drives a BlocListener that fires at every 5-point
 // milestone and a buildWhen that redraws the tier badge only every 10 points.

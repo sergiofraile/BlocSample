@@ -1,6 +1,6 @@
 //
 //  TimerCubit.swift
-//  BlocProject18
+//  BlocSwift
 //
 
 import Bloc
